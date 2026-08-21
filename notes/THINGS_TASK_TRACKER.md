@@ -34,12 +34,20 @@ None currently.
     what a GitHub App is, multi-repo automation). Full 20-section content, lab,
     reference + practice notebook pair — all complete. Every chapter number from
     07 onward was shifted +1 to make room for it.
-- [ ] Chapter 08: Actions Anatomy (stub only)
-- [ ] Chapter 09: The Event Model (stub only)
-- [ ] Chapter 10: Contexts, Expressions, Outputs & `needs` (stub only)
-- [ ] Chapter 11: Tokens & Permissions (stub only)
-- [ ] Chapter 12: Status Checks, Check Runs & Commit Statuses (stub only)
-- [ ] Chapter 13: Debugging Workflows That Didn't Fire (stub only)
+- [x] Chapter 08: Actions Anatomy
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Promoted from notebook-only to a full lab per explicit user request (batch backfill).
+- [x] Chapter 09: The Event Model
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
+- [x] Chapter 10: Contexts, Expressions, Outputs & `needs`
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
+- [x] Chapter 11: Tokens & Permissions
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Promoted from notebook-only to a full lab per explicit user request (batch backfill).
+- [x] Chapter 12: Status Checks, Check Runs & Commit Statuses
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
+- [x] Chapter 13: Debugging Workflows That Didn't Fire
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
 
 ### Phase 3 — Building the Three Gates (Ch 14–17)
 
@@ -66,10 +74,10 @@ None currently.
 
 ## 📋 NOTEBOOK TODO LIST
 
-Reference + practice pairs complete for Ch 01, 02, 03, 04, 05, 06, 07, 16. Per the
-2026-08-21 scope decision, every chapter (including the ⭐-optional ones and the
-originally "notebook-only" 03/05/08/11/18/20/21/22) gets a full reference + practice
-pair — remaining chapters pending in curriculum order (Batch 2: 08–13, Batch 3:
+Reference + practice pairs complete for Ch 01–13, 16 (Phase 1 and Phase 2 fully
+done). Per the 2026-08-21 scope decision, every chapter (including the ⭐-optional
+ones and the originally "notebook-only" 03/05/08/11/18/20/21/22) gets a full
+reference + practice pair — remaining chapters pending in curriculum order (Batch 3:
 14/15/17, Batch 4: 18–23).
 
 ---
@@ -78,12 +86,12 @@ pair — remaining chapters pending in curriculum order (Batch 2: 08–13, Batch
 
 Complete: `lab_01_airlock_principle.py`, `lab_02_pr_refs.py`,
 `lab_03_merge_strategies.py`, `lab_04_pr_data.py`, `lab_05_branch_protection.py`,
-`lab_06_merge_modes.py`, `lab_07_api_and_apps.py`, `lab_16_risk_scoring.py`.
-
-Pending, per the `CLAUDE.md` Chapter-Notebook-Lab Mapping table plus the eight
-promoted chapters from the 2026-08-21 scope decision: `lab_08_actions_anatomy.py`,
+`lab_06_merge_modes.py`, `lab_07_api_and_apps.py`, `lab_08_actions_anatomy.py`,
 `lab_09_event_matrix.py`, `lab_10_job_outputs.py`, `lab_11_tokens_and_permissions.py`,
-`lab_12_check_runs.py`, `lab_13_why_no_trigger.py`, `lab_14_repo_health.py`,
+`lab_12_check_runs.py`, `lab_13_why_no_trigger.py`, `lab_16_risk_scoring.py`.
+
+Pending, per the `CLAUDE.md` Chapter-Notebook-Lab Mapping table plus the promoted
+chapters from the 2026-08-21 scope decision: `lab_14_repo_health.py`,
 `lab_15_pr_health.py`, `lab_17_airlock.py`, `lab_18_security.py`,
 `lab_19_calibrate.py`, `lab_20_merge_queues.py`, `lab_21_reusable_workflows.py`,
 `lab_22_buy_vs_build.py`, `lab_23_capstone.py`.
@@ -132,6 +140,7 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
 - [x] `fixtures/pr_list_sample.json` — Chapter 04 (a 12-PR list for pagination demos)
 - [x] `fixtures/branch_light_status.json`, `branch_protection_full.json` — Chapter 05
       (the two branch-protection read shapes)
+- [x] `fixtures/check_run_response.json` — Chapter 12 (a published check-run response)
 - [x] `resources/gha_event_reference.md`, `resources/token_permission_matrix.md` —
       cheatsheets referenced in `CLAUDE.md`'s repo structure (already written; this line
       was stale — corrected 2026-08-21 batch 1)
@@ -161,3 +170,19 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
   mapping tables updated. All 93 tests pass (2 skipped, pre-existing and unrelated);
   all four new labs run cleanly offline in fixture mode; all four reference notebooks
   executed via `nbconvert` and stripped for commit.
+
+- **2026-08-21 — Curriculum backfill Batch 2 (Phase 2, Ch 08-13).** Full 20-section
+  content, lab script, and reference + practice notebook pair written for Chapters 08
+  (Actions Anatomy), 09 (The Event Model), 10 (Contexts, Expressions, Outputs &
+  `needs`), 11 (Tokens & Permissions), 12 (Status Checks, Check Runs & Commit
+  Statuses), and 13 (Debugging Workflows That Didn't Fire) — closing Phase 2
+  entirely. Chapters 08 and 11 were promoted from "notebook-only" per the same
+  2026-08-21 scope decision as Batch 1. Chapter 09's lab and Chapter 11's lab encode
+  the `resources/gha_event_reference.md` and `resources/token_permission_matrix.md`
+  cheatsheets as structured, testable data rather than duplicating their prose.
+  Chapter 09's lab also reproduces the real `workflow_run` two-hop `head_sha`
+  collapse bug from the Live-Repo Verification Log as a runnable simulation. One new
+  fixture (`check_run_response.json`) added. `FULL_CHAPTERS` and `PAIRED_NOTEBOOKS`
+  extended; `CLAUDE.md` and `README.md` updated. All 117 tests pass (2 skipped,
+  pre-existing and unrelated); all six new labs run cleanly offline; all six
+  reference notebooks executed via `nbconvert` and stripped for commit.

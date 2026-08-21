@@ -14,12 +14,12 @@ forward backlog.
 | 05 | Branch Protection & Rulesets | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
 | 06 | Native Auto-Merge vs Your Own Merge Call | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; verified live GraphQL restriction |
 | 07 | The GitHub API In Depth & GitHub Apps | ✅ Complete | 2026-08-21 | Added mid-build per explicit request; full 20-section content, lab, notebook pair |
-| 08 | Actions Anatomy | 📋 Planned | — | Stub only |
-| 09 | The Event Model | 📋 Planned | — | Stub only |
-| 10 | Contexts, Expressions, Outputs & `needs` | 📋 Planned | — | Stub only |
-| 11 | Tokens & Permissions | 📋 Planned | — | Stub only |
-| 12 | Status Checks, Check Runs & Commit Statuses | 📋 Planned | — | Stub only |
-| 13 | Debugging Workflows That Didn't Fire | 📋 Planned | — | Stub only |
+| 08 | Actions Anatomy | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
+| 09 | The Event Model | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
+| 10 | Contexts, Expressions, Outputs & `needs` | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
+| 11 | Tokens & Permissions | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
+| 12 | Status Checks, Check Runs & Commit Statuses | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
+| 13 | Debugging Workflows That Didn't Fire | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
 | 14 | Gate 1 — Repo Readiness | 📋 Planned | — | Stub, but live workflow built + verified |
 | 15 | Gate 2 — PR Health | 📋 Planned | — | Stub, but live workflow built + verified |
 | 16 | Gate 3 — Risk Scoring | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; live workflow verified |
@@ -52,6 +52,15 @@ notebook in the curriculum lacks an answer key. Chapter 05's lab
 (`lab_05_branch_protection.py`) directly demonstrates the real `GITHUB_TOKEN` 403
 discovery already logged below (Live-Repo Verification Log #1) rather than
 re-describing it in the abstract. Five new fixtures added to support these labs.
+
+**2026-08-21 — Curriculum backfill Batch 2 (Phase 2, Chapters 08–13).** Wrote full
+20-section content, a lab script, and a reference + practice notebook pair for
+Chapters 08 through 13, closing Phase 2 entirely (Chapters 01–13 are now all
+complete). Chapters 08 and 11 were promoted from "notebook-only" for the same
+reason as Batch 1's 03/05. Chapter 09's lab reproduces the real `workflow_run`
+two-hop `head_sha` collapse (the fourth discovery in the Live-Repo Verification Log
+below) as a runnable simulation rather than only describing it in prose; Chapter
+11's lab reproduces the real `-f`/`-F` encoding bug the same way.
 
 **2026-08-21 — Chapter 07 inserted mid-build.** User requested a dedicated chapter
 on `gh api` depth and GitHub Apps partway through the build, correctly identifying

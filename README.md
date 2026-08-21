@@ -44,10 +44,10 @@ file before (even a trivial one), has a GitHub account with a repo you can exper
 | Ch  | Title                                                                   | Lab                        | Depth | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
 | 07  | **The GitHub API In Depth: Pulling & Pushing Data, and GitHub Apps**    | 📓 practice_07 · 🐍 lab_07 | Core  | ~55 min |
-| 08  | Actions Anatomy: Workflows, Jobs, Steps, Runners                        | 📓 practice_08              | Core  | ~40 min |
+| 08  | Actions Anatomy: Workflows, Jobs, Steps, Runners                        | 📓 practice_08 · 🐍 lab_08 | Core  | ~40 min |
 | 09  | The Event Model: `pull_request`, `pull_request_target`, `schedule`, …   | 📓 practice_09 · 🐍 lab_09 | Core  | ~50 min |
 | 10  | Contexts, Expressions, Outputs & `needs`                                | 📓 practice_10 · 🐍 lab_10 | Core  | ~45 min |
-| 11  | **Tokens & Permissions** — the no-downstream-trigger rule                | 📓 practice_11              | Core  | ~50 min |
+| 11  | **Tokens & Permissions** — the no-downstream-trigger rule                | 📓 practice_11 · 🐍 lab_11 | Core  | ~50 min |
 | 12  | Status Checks, Check Runs & Commit Statuses                             | 📓 practice_12 · 🐍 lab_12 | Core  | ~40 min |
 | 13  | Debugging Workflows That Didn't Fire                                    | 📓 practice_13 · 🐍 lab_13 | Core  | ~40 min |
 

@@ -120,10 +120,10 @@ second file. `—` means the pair has not been backfilled yet.
 | 05  | Branch Protection & Rulesets               | practice_05.ipynb  | lab_05_branch_protection.ipynb | lab_05_branch_protection.py | Core |
 | 06  | Native Auto-Merge vs Your Own Merge Call   | practice_06.ipynb  | lab_06_merge_modes.ipynb | lab_06_merge_modes.py | Core |
 | 07  | The GitHub API In Depth & GitHub Apps      | practice_07.ipynb  | lab_07_api_and_apps.ipynb | lab_07_api_and_apps.py | Core |
-| 08  | Actions Anatomy                            | practice_08.ipynb  | —                     | —                                 | Core        |
+| 08  | Actions Anatomy                            | practice_08.ipynb  | lab_08_actions_anatomy.ipynb | lab_08_actions_anatomy.py | Core |
 | 09  | The Event Model                            | practice_09.ipynb  | lab_09_event_matrix.ipynb | lab_09_event_matrix.py | Core |
 | 10  | Contexts, Expressions, Outputs & `needs`   | practice_10.ipynb  | lab_10_job_outputs.ipynb | lab_10_job_outputs.py | Core |
-| 11  | Tokens & Permissions                       | practice_11.ipynb  | —                     | —                                 | Core        |
+| 11  | Tokens & Permissions                       | practice_11.ipynb  | lab_11_tokens_and_permissions.ipynb | lab_11_tokens_and_permissions.py | Core |
 | 12  | Status Checks, Check Runs & Commit Statuses | practice_12.ipynb | lab_12_check_runs.ipynb | lab_12_check_runs.py | Core |
 | 13  | Debugging Workflows That Didn't Fire       | practice_13.ipynb  | lab_13_why_no_trigger.ipynb | lab_13_why_no_trigger.py | Core |
 | 14  | Gate 1 — Repo Readiness                    | practice_14.ipynb  | lab_14_repo_health.ipynb | lab_14_repo_health.py | Core |

@@ -28,6 +28,12 @@ PAIRED_NOTEBOOKS: dict[str, str] = {
     "05": "lab_05_branch_protection",
     "06": "lab_06_merge_modes",
     "07": "lab_07_api_and_apps",
+    "08": "lab_08_actions_anatomy",
+    "09": "lab_09_event_matrix",
+    "10": "lab_10_job_outputs",
+    "11": "lab_11_tokens_and_permissions",
+    "12": "lab_12_check_runs",
+    "13": "lab_13_why_no_trigger",
     "16": "lab_16_risk_scoring",
 }
 
