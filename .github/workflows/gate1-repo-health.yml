@@ -1,0 +1,115 @@
+# Gate 1 — Repository Readiness
+# Weekly health check: confirms `main` exists, branch protection/rulesets are
+# configured, at least one required status check is registered, and repo-level
+# auto-merge is enabled. Writes readiness.json as a committed badge and opens an
+# issue if any condition regresses. Runs on a schedule but also supports
+# workflow_dispatch so it is testable in seconds rather than waiting a week
+# (see .github/instructions/workflows.instructions.md).
+# Chapter: learning_modules/chapter_13_gate1_repo_readiness.md
+
+name: "Gate 1 — Repo Readiness"
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  check-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Evaluate Gate 1 readiness
+        id: gate1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+
+          repo = os.environ["REPO"]
+
+          def gh(*args):
+              result = subprocess.run(["gh", *args], capture_output=True, text=True)
+              return result.returncode, result.stdout, result.stderr
+
+          rc, out, _ = gh("api", f"repos/{repo}/branches/main")
+          main_exists = rc == 0
+
+          rc, out, _ = gh("api", f"repos/{repo}/branches/main/protection")
+          protection_configured = rc == 0
+          required_checks_registered = False
+          if protection_configured:
+              try:
+                  data = json.loads(out)
+                  contexts = data.get("required_status_checks", {}).get("contexts", [])
+                  required_checks_registered = len(contexts) > 0
+              except json.JSONDecodeError:
+                  pass
+
+          rc, out, _ = gh("api", f"repos/{repo}")
+          auto_merge_enabled = False
+          if rc == 0:
+              try:
+                  auto_merge_enabled = json.loads(out).get("allow_auto_merge", False)
+              except json.JSONDecodeError:
+                  pass
+
+          readiness = {
+              "main_exists": main_exists,
+              "protection_configured": protection_configured,
+              "required_checks_registered": required_checks_registered,
+              "auto_merge_enabled": auto_merge_enabled,
+          }
+          readiness["ready"] = all(
+              [main_exists, protection_configured, required_checks_registered, auto_merge_enabled]
+          )
+
+          with open("readiness.json", "w") as f:
+              json.dump(readiness, f, indent=2)
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a") as f:
+                  f.write("## Gate 1 -- Repo Readiness\n\n")
+                  f.write("| Check | Status |\n|---|---|\n")
+                  for key, value in readiness.items():
+                      if key == "ready":
+                          continue
+                      f.write(f"| {key} | {'PASS' if value else 'FAIL'} |\n")
+                  overall = "READY" if readiness["ready"] else "NOT READY"
+                  f.write(f"\n**Overall: {overall}**\n")
+
+          print(json.dumps(readiness, indent=2))
+          if not readiness["ready"]:
+              sys.exit(1)
+          PY
+
+      - name: Commit readiness badge
+        if: always()
+        run: |
+          git config user.name "gate1-bot"
+          git config user.email "gate1-bot@users.noreply.github.com"
+          git add readiness.json
+          git diff --cached --quiet || git commit -m "chore: update Gate 1 readiness badge [skip ci]"
+          git push || echo "nothing to push"
+
+      - name: Open issue on regression
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Gate 1: repository readiness regressed" \
+            --body "The weekly repo-health check failed. See the run for detail: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --label "automated" || echo "issue create failed (label may not exist yet) -- see run summary"

@@ -1,0 +1,87 @@
+# Automerge — the wiring, not the merge
+# Fires after either Gate 2 or Gate 3 completes. Reads Gate 1's committed
+# readiness.json plus both gates' check-run conclusions for the PR's head SHA; if
+# and only if all three pass, it QUEUES the PR with `gh pr merge --auto --squash`.
+# It never calls the merge API directly (see Chapter 06's keystone distinction) --
+# GitHub itself performs the merge once every required check reports success.
+# Chapter: learning_modules/chapter_16_wiring_the_airlock.md
+
+name: "Automerge — Queue on All Gates Green"
+
+on:
+  workflow_run:
+    workflows: ["Gate 2 — PR Health", "Gate 3 — Risk Score"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: read
+
+jobs:
+  maybe-queue-merge:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Checkout main (for readiness.json)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Evaluate all three gates and queue merge if green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          repo = os.environ["REPO"]
+          sha = os.environ["HEAD_SHA"]
+          branch = os.environ["HEAD_BRANCH"]
+
+          def gh(*args):
+              return subprocess.run(["gh", *args], capture_output=True, text=True)
+
+          # Gate 1 -- read the last committed readiness badge on main.
+          gate1_ready = False
+          try:
+              with open("readiness.json") as f:
+                  gate1_ready = json.load(f).get("ready", False)
+          except FileNotFoundError:
+              pass  # gate1 has never run yet -- treat as not ready (fail-closed)
+
+          # Gates 2 and 3 -- read their published check-run conclusions for this SHA.
+          result = gh("api", f"repos/{repo}/commits/{sha}/check-runs")
+          check_runs = json.loads(result.stdout).get("check_runs", []) if result.returncode == 0 else []
+          conclusions = {c["name"]: c["conclusion"] for c in check_runs}
+
+          gate2_pass = conclusions.get("gate2-pr-health") == "success"
+          gate3_pass = conclusions.get("gate3-risk-score") == "success"
+
+          all_pass = gate1_ready and gate2_pass and gate3_pass
+
+          print(f"gate1_ready={gate1_ready} gate2_pass={gate2_pass} gate3_pass={gate3_pass}")
+
+          if not all_pass:
+              print("Not all gates green yet -- nothing to queue.")
+              raise SystemExit(0)
+
+          pr_result = gh("pr", "list", "--repo", repo, "--head", branch, "--state", "open", "--json", "number")
+          prs = json.loads(pr_result.stdout) if pr_result.returncode == 0 else []
+          if not prs:
+              print(f"No open PR found for branch {branch!r} -- nothing to queue.")
+              raise SystemExit(0)
+
+          pr_number = str(prs[0]["number"])
+          merge_result = gh("pr", "merge", pr_number, "--repo", repo, "--auto", "--squash")
+          print(merge_result.stdout)
+          if merge_result.returncode != 0:
+              print(f"gh pr merge --auto failed: {merge_result.stderr}")
+          else:
+              print(f"PR #{pr_number} queued for native auto-merge (squash).")
+          PY

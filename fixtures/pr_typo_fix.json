@@ -1,0 +1,11 @@
+{
+  "number": 101,
+  "title": "fix: correct typo in sandbox README",
+  "base": "main",
+  "head": "fix/readme-typo",
+  "additions": 2,
+  "deletions": 1,
+  "changed_files": 1,
+  "critical_path_hits": 0,
+  "draft": false
+}

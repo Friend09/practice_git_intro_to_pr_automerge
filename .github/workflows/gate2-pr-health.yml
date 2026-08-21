@@ -1,0 +1,80 @@
+# Gate 2 — PR Health
+# Reads the conclusion of the CI workflow run associated with a PR's head SHA and
+# publishes a fail-closed verdict as its own check run. Triggered by `workflow_run`
+# rather than `pull_request` on purpose: workflow_run fires on the completion of
+# ANOTHER workflow regardless of which token that workflow used internally, which is
+# exactly the escape hatch Chapter 10 teaches for the "GITHUB_TOKEN-authored events
+# don't trigger downstream workflows" trap. CI itself runs on a human-authored
+# pull_request event, so this chain never actually hits that trap -- but the pattern
+# here is the one you reach for the moment any link in the chain is bot-authored.
+# Chapter: learning_modules/chapter_14_gate2_pr_health.md
+
+name: "Gate 2 — PR Health"
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  checks: write
+  pull-requests: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Checkout (for pr_automerge package)
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Evaluate Gate 2 and publish a check run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          CI_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+
+          sys.path.insert(0, os.getcwd())
+          from pr_automerge.gates import evaluate_gate2
+
+          conclusion = os.environ.get("CI_CONCLUSION") or None
+          result = evaluate_gate2(conclusion)
+
+          repo = os.environ["REPO"]
+          sha = os.environ["HEAD_SHA"]
+          gh_conclusion = "success" if result.passed else "failure"
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a") as f:
+                  f.write("## Gate 2 -- PR Health\n\n")
+                  f.write(f"CI conclusion: `{conclusion}`\n\n")
+                  f.write(f"Verdict: **{result.status.value.upper()}** -- {result.rationale}\n")
+
+          subprocess.run(
+              [
+                  "gh", "api",
+                  f"repos/{repo}/check-runs",
+                  "-f", "name=gate2-pr-health",
+                  "-f", f"head_sha={sha}",
+                  "-f", "status=completed",
+                  "-f", f"conclusion={gh_conclusion}",
+                  "-f", f"output[title]=Gate 2: {result.status.value.upper()}",
+                  "-f", f"output[summary]={result.rationale}",
+              ],
+              check=True,
+          )
+          print(f"Gate 2 verdict: {result.status.value} -- {result.rationale}")
+          PY

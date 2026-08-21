@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generated artifacts
+output/*
+!output/.gitkeep
+
+# Sandbox scratch (generated PR content, not curriculum)
+sandbox/generated/
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/*
+!.vscode/settings.json

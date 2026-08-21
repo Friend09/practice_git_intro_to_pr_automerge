@@ -1,0 +1,43 @@
+# CI — builds and tests sandbox/app/
+# This is the workflow that Gate 2 (gate2-pr-health.yml) reads the conclusion of.
+# It is registered as a required status check in branch protection (Chapter 05),
+# and its completion is what gate2-pr-health.yml listens for via workflow_run
+# (Chapter 10 — workflow_run is the sanctioned way to react to another workflow's
+# completion regardless of which token that workflow used internally).
+# Chapter: learning_modules/chapter_04_actions_anatomy.md (built here),
+#          learning_modules/chapter_05_branch_protection.md (registered here)
+
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - 'sandbox/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependencies
+        run: pip install pytest
+
+      - name: Run sandbox app tests
+        run: pytest sandbox/app -v
+
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## CI Result" >> "$GITHUB_STEP_SUMMARY"
+          echo "sandbox/app test suite ran — see the step above for pass/fail detail." >> "$GITHUB_STEP_SUMMARY"

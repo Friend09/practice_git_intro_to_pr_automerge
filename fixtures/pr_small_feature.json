@@ -1,0 +1,11 @@
+{
+  "number": 102,
+  "title": "feat: add greeting helper to sandbox app",
+  "base": "main",
+  "head": "feat/greeting-helper",
+  "additions": 100,
+  "deletions": 20,
+  "changed_files": 6,
+  "critical_path_hits": 0,
+  "draft": false
+}

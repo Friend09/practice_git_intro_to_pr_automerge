@@ -1,0 +1,114 @@
+# Gate 3 — Risk Scoring
+# Fetches the PR's diff metadata, computes the pure-risk score (Chapter 15) via
+# pr_automerge.scoring, posts a score-breakdown PR comment, and publishes a check
+# run. Triggered directly on pull_request (not workflow_run) because risk scoring
+# only needs the PR's own metadata -- it has no dependency on CI's outcome, so it
+# can run in parallel with Gate 2 rather than waiting on it. automerge.yml is what
+# combines all three gate verdicts (Chapter 16).
+# Chapter: learning_modules/chapter_15_gate3_risk_scoring.md
+
+name: "Gate 3 — Risk Score"
+
+on:
+  pull_request:
+    paths:
+      - 'sandbox/**'
+
+permissions:
+  checks: write
+  pull-requests: write
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compute risk score and publish verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+
+          sys.path.insert(0, os.getcwd())
+          from pr_automerge.models import PRMetadata
+          from pr_automerge.scoring import RiskConfig, evaluate_gate3
+
+          repo = os.environ["REPO"]
+          pr_number = os.environ["PR_NUMBER"]
+          sha = os.environ["HEAD_SHA"]
+
+          out = subprocess.run(
+              ["gh", "pr", "view", pr_number, "--repo", repo,
+               "--json", "additions,deletions,changedFiles,title,baseRefName,headRefName,files"],
+              capture_output=True, text=True, check=True,
+          ).stdout
+          data = json.loads(out)
+
+          critical_globs = (".github/workflows/", "pr_automerge/")
+          critical_hits = sum(
+              1 for f in data.get("files", [])
+              if any(f["path"].startswith(g) for g in critical_globs)
+          )
+
+          pr = PRMetadata(
+              number=int(pr_number),
+              title=data["title"],
+              base=data["baseRefName"],
+              head=data["headRefName"],
+              additions=data["additions"],
+              deletions=data["deletions"],
+              changed_files=data["changedFiles"],
+              critical_path_hits=critical_hits,
+          )
+
+          result = evaluate_gate3(pr, RiskConfig())
+          gh_conclusion = "success" if result.passed else "failure"
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a") as f:
+                  f.write("## Gate 3 -- Risk Score\n\n")
+                  f.write(f"lines_changed={pr.lines_changed} files={pr.changed_files} "
+                          f"critical_path_hits={pr.critical_path_hits}\n\n")
+                  f.write(f"Verdict: **{result.status.value.upper()}** -- {result.rationale}\n")
+
+          subprocess.run(
+              ["gh", "api", f"repos/{repo}/check-runs",
+               "-f", "name=gate3-risk-score",
+               "-f", f"head_sha={sha}",
+               "-f", "status=completed",
+               "-f", f"conclusion={gh_conclusion}",
+               "-f", f"output[title]=Gate 3: {result.status.value.upper()}",
+               "-f", f"output[summary]={result.rationale}"],
+              check=True,
+          )
+
+          comment = (
+              f"**Gate 3 — Risk Score**\n\n"
+              f"| lines | files | critical paths | risk | threshold | verdict |\n"
+              f"|---|---|---|---|---|---|\n"
+              f"| {pr.lines_changed} | {pr.changed_files} | {pr.critical_path_hits} "
+              f"| {result.details['risk']} | {result.details['threshold']} "
+              f"| {'✅ merge' if result.passed else '❌ hold'} |\n"
+          )
+          subprocess.run(
+              ["gh", "pr", "comment", pr_number, "--repo", repo, "--body", comment],
+              check=False,  # a re-run posting a duplicate comment should not fail the job
+          )
+
+          print(f"Gate 3 verdict: {result.status.value} -- {result.rationale}")
+          PY

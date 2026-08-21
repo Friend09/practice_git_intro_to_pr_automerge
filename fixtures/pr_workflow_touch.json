@@ -1,0 +1,11 @@
+{
+  "number": 103,
+  "title": "ci: tweak gate3 threshold comment",
+  "base": "main",
+  "head": "chore/gate3-comment",
+  "additions": 30,
+  "deletions": 10,
+  "changed_files": 2,
+  "critical_path_hits": 1,
+  "draft": false
+}

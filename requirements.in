@@ -1,0 +1,13 @@
+# Core dependencies — the gate logic and its tests.
+# Compile with: uv pip compile requirements.in -o requirements.txt
+
+# --- CLI / process ---
+typer>=0.12
+rich>=13.7
+
+# --- Data / config ---
+pydantic>=2.7
+pyyaml>=6.0
+
+# --- Dev / test ---
+pytest>=8.2

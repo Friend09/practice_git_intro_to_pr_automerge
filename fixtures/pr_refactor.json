@@ -1,0 +1,11 @@
+{
+  "number": 104,
+  "title": "refactor: reorganize sandbox module layout",
+  "base": "main",
+  "head": "refactor/sandbox-layout",
+  "additions": 250,
+  "deletions": 90,
+  "changed_files": 14,
+  "critical_path_hits": 0,
+  "draft": false
+}
