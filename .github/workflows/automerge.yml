@@ -8,7 +8,7 @@
 # repo readiness regresses), so an unready repo can't auto-merge at all regardless
 # of what this workflow does.
 #
-# DESIGN NOTE (Chapter 17 covers this in full): an earlier version of this
+# DESIGN NOTE #1 (Chapter 17 covers this in full): an earlier version of this
 # workflow tried to manually recompute "did gate1/gate2/gate3 all pass" by
 # chaining off `workflow_run` events from Gate 2 and Gate 3, then reading
 # `github.event.workflow_run.head_sha` to find which PR to act on. That SHA is
@@ -20,6 +20,19 @@
 # read the wrong commit on the Gate-2-triggered hop and never queued the merge.
 # The fix is this file: don't recompute the verdict at all -- required status
 # checks plus native auto-merge already do that correctly, for free.
+#
+# DESIGN NOTE #2 (Chapter 07 and Chapter 11 cover this): the default GITHUB_TOKEN
+# CANNOT enable auto-merge, full stop -- verified live against this repo:
+#   GraphQL: Resource not accessible by integration (enablePullRequestAutoMerge)
+# This happens even with `permissions: pull-requests: write` declared and the
+# repo's `allow_auto_merge` setting on. Enabling auto-merge is one of a small set
+# of PR mutations GitHub deliberately withholds from the Actions bot identity,
+# same family as the branch-protection read restriction Gate 1 hit (Chapter 14).
+# The fix is a PAT or GitHub App installation token with `pull_requests: write`,
+# stored as the PRA_BOT_TOKEN secret (see Chapter 07's hands-on section for how to
+# mint one). This step tries GITHUB_TOKEN first and falls back to PRA_BOT_TOKEN if
+# it's configured, so the workflow is honest about which token path actually
+# queued the merge rather than silently no-op'ing.
 # Chapter: learning_modules/chapter_17_wiring_the_airlock.md
 
 name: "Automerge — Queue on Open/Update"
@@ -41,8 +54,23 @@ jobs:
       - name: Queue native auto-merge for this PR
         env:
           GH_TOKEN: ${{ github.token }}
+          PRA_BOT_TOKEN: ${{ secrets.PRA_BOT_TOKEN }}
         run: |
-          gh pr merge "${{ github.event.pull_request.number }}" \
-            --repo "${{ github.repository }}" \
-            --auto --squash \
-          || echo "gh pr merge --auto failed -- likely Gate 1 has allow_auto_merge disabled, or protection isn't fully configured yet. See job summary / Chapter 14."
+          PR="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+
+          if gh pr merge "$PR" --repo "$REPO" --auto --squash; then
+            echo "Queued via GITHUB_TOKEN." >> "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$PRA_BOT_TOKEN" ]; then
+            echo "GITHUB_TOKEN cannot enable auto-merge (expected -- see Chapter 07/11)." >> "$GITHUB_STEP_SUMMARY"
+            if GH_TOKEN="$PRA_BOT_TOKEN" gh pr merge "$PR" --repo "$REPO" --auto --squash; then
+              echo "Queued via PRA_BOT_TOKEN (PAT)." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "PRA_BOT_TOKEN is set but also failed to enable auto-merge -- check its pull_requests:write scope." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          else
+            echo "GITHUB_TOKEN cannot enable auto-merge (GraphQL: Resource not accessible by integration)." >> "$GITHUB_STEP_SUMMARY"
+            echo "No PRA_BOT_TOKEN secret configured -- see Chapter 07's hands-on section to mint a PAT and add it." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
