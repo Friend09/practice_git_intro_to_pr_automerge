@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A 23-chapter learning curriculum on GitHub pull-request auto-merge, from Git-level fundamentals
+A 24-chapter learning curriculum on GitHub pull-request auto-merge, from Git-level fundamentals
 through a working 3-gate auto-merge "airlock" built and fired for real against this repo's own
 sandbox. Every chapter includes an **Automation Engineer's Lens** and a **Native vs Custom**
 callout. This repo is unusual among learning repos: it is simultaneously the curriculum *and*
@@ -113,6 +113,7 @@ second file. `—` means the pair has not been backfilled yet.
 
 | Ch  | Title                                     | Practice Notebook | Reference Notebook | Script                          | Depth       |
 | --- | ------------------------------------------ | ------------------ | -------------------- | -------------------------------- | ----------- |
+| 00  | Fundamentals — Git, PRs \& GitHub Actions  | practice_00.ipynb  | lab_00_fundamentals.ipynb | lab_00_fundamentals.py | Core |
 | 01  | Auto-Merge & The Airlock Principle         | practice_01.ipynb  | lab_01_airlock_principle.ipynb | lab_01_airlock_principle.py | Core |
 | 02  | Refs, Branches & What a PR Really Is       | practice_02.ipynb  | lab_02_pr_refs.ipynb | lab_02_pr_refs.py | Core |
 | 03  | Merge Commit vs Squash vs Rebase           | practice_03.ipynb  | lab_03_merge_strategies.ipynb | lab_03_merge_strategies.py | Core |

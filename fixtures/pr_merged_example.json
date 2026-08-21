@@ -1,0 +1,22 @@
+{
+  "number": 101,
+  "state": "closed",
+  "title": "fix: correct typo in sandbox README",
+  "draft": false,
+  "merged": true,
+  "merged_at": "2026-08-15T14:32:07Z",
+  "merge_commit_sha": "7c4a9e8d13ad1e0c9a18bd5e2f4b6789012cdef3",
+  "mergeable_state": "clean",
+  "head": {
+    "ref": "fix/readme-typo",
+    "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+  },
+  "base": {
+    "ref": "main",
+    "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736"
+  },
+  "additions": 2,
+  "deletions": 1,
+  "changed_files": 1,
+  "commits": 1
+}

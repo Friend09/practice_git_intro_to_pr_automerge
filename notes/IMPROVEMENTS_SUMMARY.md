@@ -7,6 +7,7 @@ forward backlog.
 
 | # | Chapter | Status | Date | Notes |
 | - | ------- | ------ | ---- | ----- |
+| 00 | Fundamentals — Git, PRs & GitHub Actions | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; added per explicit user request AFTER the 23-chapter curriculum was otherwise complete |
 | 01 | Auto-Merge & The Airlock Principle | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
 | 02 | Refs, Branches & What a PR Really Is | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
 | 03 | Merge Commit vs Squash vs Rebase | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
@@ -40,7 +41,9 @@ the shared `pr_automerge` package, five live gate workflows, and the test suite.
 Chapters 01, 06, 07, and 16 written to full depth with matching lab scripts and
 notebook pairs; the remaining 19 chapters are header-block stubs with correct,
 final metadata (so `CLAUDE.md`'s mapping table and `README.md`'s curriculum tables
-are already accurate for the whole 23-chapter arc).
+were already accurate for the 23-chapter arc as it stood then; Chapter 00 was
+added later, on 2026-08-21, after the user asked for a Git/PR/Actions fundamentals
+refresher, bringing the curriculum to 24 chapters — see the batch entry below).
 
 **2026-08-21 — Curriculum backfill Batch 1 (Phase 1, Chapters 02–05).** Wrote full
 20-section content, a lab script, and a reference + practice notebook pair for
@@ -88,6 +91,27 @@ has a genuine one-command answer (`explain_decision`), tested against two
 contrasting sample PRs. All 23 chapters, all 23 lab scripts, and all 23 notebook
 pairs are now complete; this file's Chapter Completion Tracker above reflects the
 finished state.
+
+**2026-08-21 — Chapter 00 added: Fundamentals — Git, Pull Requests & GitHub
+Actions.** After the 23-chapter curriculum was otherwise complete, the user asked
+for a Git fundamentals refresher — their own working vocabulary stopped at
+`git add . && git commit -m "..." && git push origin main`, with `git merge`
+itself still a gap — and, mid-request, also asked for the end-to-end pull-request
+lifecycle (what a successful merge looks like) and a basic primer on what a
+GitHub Actions workflow file even is, correctly noting that Chapter 08's full
+Actions Anatomy treatment is too many chapters deep to serve as the on-ramp.
+Added as Chapter 00 (not a renumbering — every existing chapter keeps its number)
+with full 20-section content, a lab script, and a reference + practice notebook
+pair, covering: the three areas (working directory/staging/history) and the
+add→commit cycle, branches as pointers, a fast-forward merge (deliberately the
+simplest case, deferring the three real merge strategies to Chapter 03), the
+nine-stage PR lifecycle, the exact fields (`merged: true` + `merge_commit_sha`,
+not `state` alone) that mark a successful merge, and a minimal real workflow
+YAML parsed into its four pieces (name/trigger/jobs/steps). One new fixture
+(`pr_merged_example.json`). Chapter 01's Prerequisites field updated to point to
+Chapter 00. `FULL_CHAPTERS` and `PAIRED_NOTEBOOKS` extended to include `"00"`;
+`CLAUDE.md` and `README.md` updated throughout (23→24 chapters, Phase 1 now reads
+Chapters 0–6, new mapping-table row, updated reading-time totals and schedules).
 
 **2026-08-21 — Chapter 07 inserted mid-build.** User requested a dedicated chapter
 on `gh api` depth and GitHub Apps partway through the build, correctly identifying

@@ -1,7 +1,8 @@
 # Chapter 01: Auto-Merge & The Airlock Principle
 
 **Reading Time:** ~40 minutes
-**Prerequisites:** None
+**Prerequisites:** Chapter 00 (Git, PR & Actions Fundamentals) — or skip it if you're already
+comfortable with `git`, the PR lifecycle, and what a workflow YAML file is
 **Practice Notebook:** `notebooks/practice_01.ipynb`
 **Reference Notebook:** `notebooks/lab_01_airlock_principle.ipynb`
 **Script:** `labs/lab_01_airlock_principle.py`

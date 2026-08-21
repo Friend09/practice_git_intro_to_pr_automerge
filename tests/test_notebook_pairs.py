@@ -21,6 +21,7 @@ NOTEBOOKS_DIR = ROOT / "notebooks"
 #: chapter number -> reference notebook filename stem (without .ipynb), for pairs
 #: that exist. Extend this as chapters are backfilled.
 PAIRED_NOTEBOOKS: dict[str, str] = {
+    "00": "lab_00_fundamentals",
     "01": "lab_01_airlock_principle",
     "02": "lab_02_pr_refs",
     "03": "lab_03_merge_strategies",

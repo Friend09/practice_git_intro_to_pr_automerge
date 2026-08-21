@@ -10,6 +10,15 @@ None currently.
 
 ## 📋 CHAPTER TODO LIST
 
+### Phase 0 — Fundamentals (Ch 00)
+
+- [x] Chapter 00: Fundamentals — Git, Pull Requests & GitHub Actions
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Added after the 23-chapter curriculum was otherwise finished, per explicit user
+    request (a Git refresher, then the PR lifecycle, then GitHub Actions basics,
+    added as three follow-up requests in one session). Not a renumbering — every
+    existing chapter (01–23) keeps its original number.
+
 ### Phase 1 — What a Pull Request Actually Is (Ch 01–06)
 
 - [x] Chapter 01: Auto-Merge & The Airlock Principle
@@ -83,25 +92,27 @@ None currently.
   - Full 20-section content, lab, reference + practice notebook pair — all complete.
     Fulfills Chapter 01 §9's audit-trail promise.
 
-**All 23 chapters are now complete.** The curriculum backfill described in this
-tracker is finished.
+**All 24 chapters (00–23) are now complete.** The curriculum backfill described in
+this tracker is finished.
 
 ---
 
 ## 📋 NOTEBOOK TODO LIST
 
-**Complete for all 23 chapters.** Every chapter (including the ⭐-optional ones and
-the originally "notebook-only" 03/05/08/11/18/20/21/22) has a full reference +
-practice notebook pair, per the 2026-08-21 scope decision.
+**Complete for all 24 chapters (00–23).** Every chapter (including the
+⭐-optional ones and the originally "notebook-only" 03/05/08/11/18/20/21/22) has a
+full reference + practice notebook pair, per the 2026-08-21 scope decision.
+Chapter 00 was added afterward, per explicit user request.
 
 ---
 
 ## 📋 LAB SCRIPT TODO LIST
 
-**Complete for all 23 chapters.** `lab_01_airlock_principle.py` through
+**Complete for all 24 chapters (00–23).** `lab_00_fundamentals.py` through
 `lab_23_capstone.py` — every chapter now has a matching lab script, including the
 eight originally "notebook-only" chapters (03, 05, 08, 11, 18, 20, 21, 22), promoted
-per the 2026-08-21 scope decision.
+per the 2026-08-21 scope decision, and Chapter 00, added afterward per explicit
+user request.
 
 Note: `lab_14_repo_health.py` and `lab_15_pr_health.py` should be thin wrappers
 around the logic already implemented and live-verified in `pr_automerge/gates.py`
@@ -118,7 +129,7 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
 - [x] Directory skeleton, `.gitignore`, `Makefile`, `.code-workspace`
 - [x] `.github/instructions/*.instructions.md` — all four (chapter, labs, notebooks, workflows)
 - [x] `.github/copilot-instructions.md`
-- [x] `CLAUDE.md` with full 23-chapter mapping table
+- [x] `CLAUDE.md` with full 24-chapter mapping table
 - [x] `README.md` with full 4-phase curriculum, gate mapping, doc alignment, schedules
 - [x] `pr_automerge/` shared package: `models.py`, `gh_client.py`, `gates.py`, `scoring.py`, `render.py`
 - [x] `fixtures/` — five worked-example PR payloads
@@ -152,6 +163,8 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
 - [x] `fixtures/check_runs_for_sha.json` — Chapter 15 (per-SHA check-run listing)
 - [x] `gates.yml` (repo root) — Chapter 19's live config file, not a fixture, but the
       other half of the same "config over constants" design (Chapter 16 §9)
+- [x] `fixtures/pr_merged_example.json` — Chapter 00 (a raw PR object the moment
+      after a successful merge — `merged: true`, `merge_commit_sha`, `merged_at`)
 - [x] `resources/gha_event_reference.md`, `resources/token_permission_matrix.md` —
       cheatsheets referenced in `CLAUDE.md`'s repo structure (already written; this line
       was stale — corrected 2026-08-21 batch 1)
@@ -237,3 +250,20 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
   skipped, pre-existing and unrelated); all six new labs run cleanly offline; all
   six reference notebooks executed via `nbconvert` and stripped for commit. No
   `.github/workflows/*.yml` files were edited at any point across all four batches.
+
+- **2026-08-21 — Chapter 00 added: Fundamentals — Git, Pull Requests & GitHub
+  Actions.** After the 23-chapter curriculum was complete, the user asked for a
+  Git fundamentals refresher (their own vocabulary stopped at `add`/`commit`/
+  `push`, with `merge` still a gap), then mid-request also asked for the
+  end-to-end PR lifecycle and a basic GitHub Actions workflow-file primer,
+  correctly noting Chapter 08's full treatment is too many chapters deep to serve
+  as the on-ramp. Added as Chapter 00 — every existing chapter (01–23) keeps its
+  original number, this is not a renumbering. Full 20-section content, a lab
+  script, and a reference + practice notebook pair: the three areas and add→commit
+  cycle, branches as pointers, a fast-forward merge (Chapter 03 owns the real
+  merge strategies), the nine-stage PR lifecycle, the exact fields that mark a
+  successful merge (`merged: true` + `merge_commit_sha`, not `state` alone), and a
+  minimal real workflow YAML parsed into its four pieces. One new fixture
+  (`pr_merged_example.json`). Chapter 01's Prerequisites now points to Chapter 00.
+  `FULL_CHAPTERS`/`PAIRED_NOTEBOOKS` extended; `CLAUDE.md` and `README.md` updated
+  throughout for the 24-chapter count. The curriculum now runs 00–23, all complete.

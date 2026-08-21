@@ -1,6 +1,6 @@
 # Intro to PR Auto-Merge
 
-## A 23-Chapter Curriculum — 4 Phases, Built on a Live Sandbox Repo
+## A 24-Chapter Curriculum — 4 Phases, Built on a Live Sandbox Repo
 
 > **Philosophy:** `main` is a sealed chamber. Nothing enters except through a sequence of doors,
 > each of which opens only when the one before it is verified shut.
@@ -21,17 +21,20 @@ system that actually runs.
 
 **Prerequisites:** Comfortable with `git` day to day, has written at least one `.github/workflows/*.yml`
 file before (even a trivial one), has a GitHub account with a repo you can experiment on freely.
+New to `git`, PRs, or GitHub Actions entirely? Start with Chapter 00 — it's a from-scratch refresher
+built specifically for exactly that gap.
 
 ---
 
-## Curriculum Overview — 23 Chapters, 4 Phases
+## Curriculum Overview — 24 Chapters, 4 Phases
 
 ⭐ = Optional Deep-Dive (can skip on first pass, return when ready)
 
-### Phase 1 — What a Pull Request Actually Is _(Chapters 1–6)_
+### Phase 1 — What a Pull Request Actually Is _(Chapters 0–6)_
 
 | Ch  | Title                                                                   | Lab                        | Depth | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
+| 00  | Fundamentals: Git, Pull Requests \& GitHub Actions                      | 📓 practice_00 · 🐍 lab_00 | Core  | ~50 min |
 | 01  | Auto-Merge & The Airlock Principle                                       | 📓 practice_01 · 🐍 lab_01 | Core  | ~40 min |
 | 02  | Refs, Branches & What a PR Really Is                                     | 📓 practice_02 · 🐍 lab_02 | Core  | ~45 min |
 | 03  | Merge Commit vs Squash vs Rebase                                         | 📓 practice_03 · 🐍 lab_03 | Core  | ~35 min |
@@ -71,8 +74,8 @@ file before (even a trivial one), has a GitHub account with a repo you can exper
 | 22  | Buy vs Build: Mergify, Kodiak, Renovate                                 | 📓 practice_22 · 🐍 lab_22 | ⭐ Optional | ~35 min |
 | 23  | **Capstone**: The Complete Airlock, Audit Trail & Rollback              | 📓 practice_23 · 🐍 lab_23 | Core        | ~60 min |
 
-**Total reading (Core only, ~20 chapters):** ~14–15 hours
-**Total reading (all 23 chapters):** ~17–19 hours
+**Total reading (Core only, ~21 chapters):** ~15–16 hours
+**Total reading (all 24 chapters):** ~18–20 hours
 
 ---
 
@@ -95,6 +98,7 @@ material, *Pro Git* (Chacon & Straub, free at git-scm.com/book).
 
 | Repo Chapter(s) | GitHub Docs | Pro Git |
 | ---------------- | ------------ | -------- |
+| Ch 00 | "About pull requests", "Understanding GitHub Actions" | Ch 1 (Getting Started), Ch 2 (Git Basics) |
 | Ch 01–02 | "About pull requests" | Ch 3 (Branching), Ch 10.3 (Git Internals — refs) |
 | Ch 03 | "About merge methods" | Ch 3.2 (Basic Merging), Ch 7.6 (Rewriting History) |
 | Ch 04 | REST API — Pulls | — |
@@ -117,9 +121,9 @@ material, *Pro Git* (Chacon & Straub, free at git-scm.com/book).
 
 | Pace         | Hours/Week | Chapters                     | Duration  |
 | ------------ | ---------- | ----------------------------- | --------- |
-| 🐢 Relaxed   | 3–4 hrs    | Core only (~20 chapters)     | ~15 weeks |
+| 🐢 Relaxed   | 3–4 hrs    | Core only (~21 chapters)     | ~15 weeks |
 | 🚶 Moderate  | 5–6 hrs    | Core + selected ⭐ chapters   | ~11 weeks |
-| 🏃 Intensive | 8–10 hrs   | All 23 chapters               | ~8 weeks  |
+| 🏃 Intensive | 8–10 hrs   | All 24 chapters               | ~8 weeks  |
 
 ---
 
@@ -127,7 +131,7 @@ material, *Pro Git* (Chacon & Straub, free at git-scm.com/book).
 
 ```
 practice_git_intro_to_pr_automerge/
-├── learning_modules/     # 23 chapters (chapter_XX_<topic>.md)
+├── learning_modules/     # 24 chapters (chapter_XX_<topic>.md)
 ├── notebooks/            # practice notebooks (practice_XX.ipynb) + reference notebooks (lab_XX_<topic>.ipynb)
 ├── labs/                 # importable gate logic (lab_XX_<topic>.py)
 ├── sandbox/              # generate throwaway PRs of known size — the only paths the gates watch
