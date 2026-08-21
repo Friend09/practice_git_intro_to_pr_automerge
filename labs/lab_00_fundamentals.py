@@ -71,20 +71,19 @@ FIXTURE_TRANSCRIPT: dict[str, str] = {
         "On branch main\n"
         "No commits yet\n"
         "Untracked files:\n"
-        "  (use \"git add <file>...\" to include in what will be committed)\n"
+        '  (use "git add <file>..." to include in what will be committed)\n'
         "\tREADME.md\n"
     ),
     "status_staged": (
         "On branch main\n"
         "No commits yet\n"
         "Changes to be committed:\n"
-        "  (use \"git rm --cached <file>...\" to unstage)\n"
+        '  (use "git rm --cached <file>..." to unstage)\n'
         "\tnew file:   README.md\n"
     ),
     "status_clean": "On branch main\nnothing to commit, working tree clean\n",
     "log_two_commits": (
-        "2b1c9a0 second: mention the sandbox\n"
-        "9f3e7d1 first commit: add README\n"
+        "2b1c9a0 second: mention the sandbox\n" "9f3e7d1 first commit: add README\n"
     ),
     "diff_unstaged": (
         "diff --git a/README.md b/README.md\n"
@@ -105,15 +104,42 @@ FIXTURE_TRANSCRIPT: dict[str, str] = {
 #: The end-to-end pull-request lifecycle, plain-language, in order. Chapter 01
 #: names this same arc "the Airlock"; this chapter is the pre-vocabulary version.
 PR_LIFECYCLE_STAGES: list[dict[str, str]] = [
-    {"stage": "Branch created", "what_happens": "A new branch is created off main, e.g. `git checkout -b fix/readme-typo`."},
-    {"stage": "Commits made locally", "what_happens": "The add -> commit cycle from Steps 1-2 above, on that branch."},
-    {"stage": "Branch pushed", "what_happens": "`git push origin fix/readme-typo` uploads the branch's commits to GitHub."},
-    {"stage": "PR opened", "what_happens": "`gh pr create` (or the GitHub UI) asks GitHub to compare the branch against main and open a PR."},
-    {"stage": "Checks run", "what_happens": "GitHub Actions workflows fire automatically (Step 6 below, Chapter 08-09) and report pass/fail."},
-    {"stage": "Review requested/given", "what_happens": "A human (or nobody, if none is required) reviews the diff and approves or requests changes."},
-    {"stage": "Merge becomes available", "what_happens": "Once every required check passes and required reviews are satisfied, GitHub enables the merge button (or native auto-merge, Chapter 06, fires on its own)."},
-    {"stage": "Merged", "what_happens": "GitHub combines the branch into main using whichever strategy is configured (Chapter 03) and marks the PR merged: true."},
-    {"stage": "Branch cleaned up", "what_happens": "The now-merged branch is typically deleted -- its commits live on in main's history regardless."},
+    {
+        "stage": "Branch created",
+        "what_happens": "A new branch is created off main, e.g. `git checkout -b fix/readme-typo`.",
+    },
+    {
+        "stage": "Commits made locally",
+        "what_happens": "The add -> commit cycle from Steps 1-2 above, on that branch.",
+    },
+    {
+        "stage": "Branch pushed",
+        "what_happens": "`git push origin fix/readme-typo` uploads the branch's commits to GitHub.",
+    },
+    {
+        "stage": "PR opened",
+        "what_happens": "`gh pr create` (or the GitHub UI) asks GitHub to compare the branch against main and open a PR.",
+    },
+    {
+        "stage": "Checks run",
+        "what_happens": "GitHub Actions workflows fire automatically (Step 6 below, Chapter 08-09) and report pass/fail.",
+    },
+    {
+        "stage": "Review requested/given",
+        "what_happens": "A human (or nobody, if none is required) reviews the diff and approves or requests changes.",
+    },
+    {
+        "stage": "Merge becomes available",
+        "what_happens": "Once every required check passes and required reviews are satisfied, GitHub enables the merge button (or native auto-merge, Chapter 06, fires on its own).",
+    },
+    {
+        "stage": "Merged",
+        "what_happens": "GitHub combines the branch into main using whichever strategy is configured (Chapter 03) and marks the PR merged: true.",
+    },
+    {
+        "stage": "Branch cleaned up",
+        "what_happens": "The now-merged branch is typically deleted -- its commits live on in main's history regardless.",
+    },
 ]
 
 #: A minimal, real, valid GitHub Actions workflow -- deliberately smaller than
@@ -174,7 +200,9 @@ def _run_git(args: list[str], cwd: Path) -> str:
             shell=False,
         )
     except subprocess.CalledProcessError as exc:
-        raise GhClientError(f"git {' '.join(args)} exited {exc.returncode}: {exc.stderr.strip()}") from exc
+        raise GhClientError(
+            f"git {' '.join(args)} exited {exc.returncode}: {exc.stderr.strip()}"
+        ) from exc
     except FileNotFoundError as exc:
         raise GhClientError("git not found on PATH") from exc
     return result.stdout.strip()
@@ -347,10 +375,14 @@ def describe_minimal_workflow(yaml_text: str) -> dict:
     trigger_raw = doc.get("on") or doc.get(True) or {}
     return {
         "name": doc.get("name"),
-        "trigger": list(trigger_raw.keys()) if isinstance(trigger_raw, dict) else [trigger_raw],
+        "trigger": (
+            list(trigger_raw.keys()) if isinstance(trigger_raw, dict) else [trigger_raw]
+        ),
         "job_id": job_id,
         "runs_on": job.get("runs-on"),
-        "step_names": [s.get("name", s.get("uses", s.get("run"))) for s in job.get("steps", [])],
+        "step_names": [
+            s.get("name", s.get("uses", s.get("run"))) for s in job.get("steps", [])
+        ],
     }
 
 
