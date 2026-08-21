@@ -1,0 +1,23 @@
+# Gate 3 risk-scoring configuration — Chapter 16 §9, Chapter 19.
+#
+# This file exists specifically so recalibrating the threshold (Chapter 19) or
+# adjusting a weight never requires a source-code edit. `pr_automerge.scoring.load_config`
+# reads this file into a `RiskConfig` — see that function's docstring for the exact
+# mapping. Values here match `pr_automerge.scoring`'s module-level defaults
+# (RISK_WEIGHTS, DEFAULT_THRESHOLD, HARD_CEILING_LINES) as of 2026-08-21; edit this
+# file, not the Python constants, when recalibrating.
+
+weights:
+  lines: 30.0
+  files: 25.0
+  critical_paths: 45.0
+
+threshold: 70.0
+
+hard_ceiling_lines: 500
+
+# Glob prefixes (matched with str.startswith, same as gate3-score.yml's own
+# critical_globs tuple) whose changed files each count as one critical-path hit.
+critical_path_globs:
+  - ".github/workflows/"
+  - "pr_automerge/"

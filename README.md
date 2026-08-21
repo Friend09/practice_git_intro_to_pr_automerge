@@ -64,11 +64,11 @@ file before (even a trivial one), has a GitHub account with a repo you can exper
 
 | Ch  | Title                                                                   | Lab                        | Depth       | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----------- | ------- |
-| 18  | Security: `pull_request_target` & Fork PRs                              | 📓 practice_18              | Core        | ~50 min |
+| 18  | Security: `pull_request_target` & Fork PRs                              | 📓 practice_18 · 🐍 lab_18 | Core        | ~50 min |
 | 19  | Calibrating the Threshold                                                | 📓 practice_19 · 🐍 lab_19 | Core        | ~50 min |
-| 20  | Merge Queues                                                             | 📓 practice_20              | ⭐ Optional | ~40 min |
-| 21  | Reusable Workflows & Composite Actions                                  | 📓 practice_21              | ⭐ Optional | ~40 min |
-| 22  | Buy vs Build: Mergify, Kodiak, Renovate                                 | 📓 practice_22              | ⭐ Optional | ~35 min |
+| 20  | Merge Queues                                                             | 📓 practice_20 · 🐍 lab_20 | ⭐ Optional | ~40 min |
+| 21  | Reusable Workflows & Composite Actions                                  | 📓 practice_21 · 🐍 lab_21 | ⭐ Optional | ~40 min |
+| 22  | Buy vs Build: Mergify, Kodiak, Renovate                                 | 📓 practice_22 · 🐍 lab_22 | ⭐ Optional | ~35 min |
 | 23  | **Capstone**: The Complete Airlock, Audit Trail & Rollback              | 📓 practice_23 · 🐍 lab_23 | Core        | ~60 min |
 
 **Total reading (Core only, ~20 chapters):** ~14–15 hours

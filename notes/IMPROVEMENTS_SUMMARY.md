@@ -24,12 +24,12 @@ forward backlog.
 | 15 | Gate 2 — PR Health | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; live workflow built + verified |
 | 16 | Gate 3 — Risk Scoring | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; live workflow verified |
 | 17 | Wiring the Airlock | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; `automerge.yml` built + redesigned once + verified |
-| 18 | Security | 📋 Planned | — | Stub only |
-| 19 | Calibrating the Threshold | 📋 Planned | — | Stub only |
-| 20 | Merge Queues (⭐) | 📋 Planned | — | Stub only |
-| 21 | Reusable Workflows & Composite Actions (⭐) | 📋 Planned | — | Stub only |
-| 22 | Buy vs Build (⭐) | 📋 Planned | — | Stub only |
-| 23 | Capstone | 📋 Planned | — | Stub only |
+| 18 | Security | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
+| 19 | Calibrating the Threshold | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; added `gates.yml` + `load_config` |
+| 20 | Merge Queues (⭐) | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
+| 21 | Reusable Workflows & Composite Actions (⭐) | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
+| 22 | Buy vs Build (⭐) | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
+| 23 | Capstone | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; fulfills Ch 01 §9's audit-trail promise |
 
 ## Batch Update Log
 
@@ -74,6 +74,20 @@ composes all three gates into one `decide() -> Decision` call, made explicit in
 Python for teaching purposes even though none of the five real workflows need this
 composition — they achieve it entirely through required status checks and native
 auto-merge, with zero direct coordination between the three gate workflows.
+
+**2026-08-21 — Curriculum backfill Batch 4 (Phase 4, Chapters 18–23) — CURRICULUM
+COMPLETE.** Wrote full 20-section content, a lab script, and a reference + practice
+notebook pair for Chapters 18 through 23, completing every one of the 23 planned
+chapters. Chapters 20–22 (the three ⭐ optional deep-dives) were promoted from
+"notebook-only" for the same reason as every earlier promoted chapter. Added
+`gates.yml` and `pr_automerge.scoring.load_config` — the config file Chapter 16 §9
+promised would exist, finally built to support Chapter 19's calibration lab.
+Chapter 23's capstone reuses Chapter 17's `decide()` unchanged and adds the durable,
+queryable audit trail Chapter 01 §9 promised on day one — "why did PR #N merge?" now
+has a genuine one-command answer (`explain_decision`), tested against two
+contrasting sample PRs. All 23 chapters, all 23 lab scripts, and all 23 notebook
+pairs are now complete; this file's Chapter Completion Tracker above reflects the
+finished state.
 
 **2026-08-21 — Chapter 07 inserted mid-build.** User requested a dedicated chapter
 on `gh api` depth and GitHub Apps partway through the build, correctly identifying

@@ -130,11 +130,11 @@ second file. `—` means the pair has not been backfilled yet.
 | 15  | Gate 2 — PR Health                         | practice_15.ipynb  | lab_15_pr_health.ipynb | lab_15_pr_health.py | Core |
 | 16  | Gate 3 — Risk Scoring                      | practice_16.ipynb  | lab_16_risk_scoring.ipynb | lab_16_risk_scoring.py | Core |
 | 17  | Wiring the Airlock                         | practice_17.ipynb  | lab_17_airlock.ipynb | lab_17_airlock.py | Core |
-| 18  | Security                                   | practice_18.ipynb  | —                     | —                                 | Core        |
+| 18  | Security                                   | practice_18.ipynb  | lab_18_security.ipynb | lab_18_security.py | Core |
 | 19  | Calibrating the Threshold                  | practice_19.ipynb  | lab_19_calibrate.ipynb | lab_19_calibrate.py | Core |
-| 20  | Merge Queues                               | practice_20.ipynb  | —                     | —                                 | ⭐ Optional |
-| 21  | Reusable Workflows & Composite Actions     | practice_21.ipynb  | —                     | —                                 | ⭐ Optional |
-| 22  | Buy vs Build                               | practice_22.ipynb  | —                     | —                                 | ⭐ Optional |
+| 20  | Merge Queues                               | practice_20.ipynb  | lab_20_merge_queues.ipynb | lab_20_merge_queues.py | ⭐ Optional |
+| 21  | Reusable Workflows & Composite Actions     | practice_21.ipynb  | lab_21_reusable_workflows.ipynb | lab_21_reusable_workflows.py | ⭐ Optional |
+| 22  | Buy vs Build                               | practice_22.ipynb  | lab_22_buy_vs_build.ipynb | lab_22_buy_vs_build.py | ⭐ Optional |
 | 23  | Capstone                                   | practice_23.ipynb  | lab_23_capstone.ipynb | lab_23_capstone.py | Core |
 
 ## Gate 3 Scoring Model (locked design decision — do not silently flip)

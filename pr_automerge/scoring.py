@@ -12,6 +12,9 @@ the two mid-pipeline. See Chapter 16 for the full comparison.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
 
 from pr_automerge.models import GateResult, GateStatus, PRMetadata
 
@@ -50,6 +53,52 @@ class RiskConfig:
     def __post_init__(self) -> None:
         if self.weights is None:
             object.__setattr__(self, "weights", dict(RISK_WEIGHTS))
+
+
+def load_config(path: str | Path = "gates.yml") -> RiskConfig:
+    """Load a :class:`RiskConfig` from a ``gates.yml``-shaped file (Chapter 16 §9, Chapter 19).
+
+    This is what makes recalibration (Chapter 19) an edit to a committed config
+    file, never a source-code change — the deliberate contrast with the prior-art
+    POC's bare ``DEFAULT_THRESHOLD = 0.9`` module constant (see this module's
+    docstring).
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to a YAML file shaped like this repo's own ``gates.yml``:
+        ``weights: {lines, files, critical_paths}``, ``threshold``,
+        ``hard_ceiling_lines``. Missing keys fall back to this module's defaults.
+
+    Returns
+    -------
+    RiskConfig
+        A config object with every value sourced from the file (or the default,
+        for any key the file omits).
+
+    Raises
+    ------
+    FileNotFoundError
+        If `path` doesn't exist.
+
+    Examples
+    --------
+    >>> import tempfile
+    >>> from pathlib import Path
+    >>> text = "weights:\\n  lines: 30.0\\n  files: 25.0\\n  critical_paths: 45.0\\nthreshold: 60.0\\n"
+    >>> with tempfile.TemporaryDirectory() as tmp:
+    ...     p = Path(tmp) / "gates.yml"
+    ...     _ = p.write_text(text)
+    ...     load_config(p).threshold
+    60.0
+    """
+    data = yaml.safe_load(Path(path).read_text()) or {}
+    weights = data.get("weights") or dict(RISK_WEIGHTS)
+    return RiskConfig(
+        weights=dict(weights),
+        threshold=float(data.get("threshold", DEFAULT_THRESHOLD)),
+        hard_ceiling_lines=int(data.get("hard_ceiling_lines", HARD_CEILING_LINES)),
+    )
 
 
 def compute_risk(pr: PRMetadata, config: RiskConfig) -> float:

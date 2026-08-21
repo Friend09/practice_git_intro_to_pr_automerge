@@ -66,38 +66,42 @@ None currently.
 
 ### Phase 4 — Hardening, Scale & Operations (Ch 18–23)
 
-- [ ] Chapter 18: Security (stub only)
-- [ ] Chapter 19: Calibrating the Threshold (stub only)
-- [ ] Chapter 20: Merge Queues — ⭐ Optional (stub only)
-- [ ] Chapter 21: Reusable Workflows & Composite Actions — ⭐ Optional (stub only)
-- [ ] Chapter 22: Buy vs Build — ⭐ Optional (stub only)
-- [ ] Chapter 23: Capstone (stub only)
+- [x] Chapter 18: Security
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
+- [x] Chapter 19: Calibrating the Threshold
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
+- [x] Chapter 20: Merge Queues — ⭐ Optional
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Promoted from notebook-only to a full lab per explicit user request (batch backfill).
+- [x] Chapter 21: Reusable Workflows & Composite Actions — ⭐ Optional
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Promoted from notebook-only to a full lab per explicit user request (batch backfill).
+- [x] Chapter 22: Buy vs Build — ⭐ Optional
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Promoted from notebook-only to a full lab per explicit user request (batch backfill).
+- [x] Chapter 23: Capstone
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Fulfills Chapter 01 §9's audit-trail promise.
+
+**All 23 chapters are now complete.** The curriculum backfill described in this
+tracker is finished.
 
 ---
 
 ## 📋 NOTEBOOK TODO LIST
 
-Reference + practice pairs complete for Ch 01–17 (Phase 1, Phase 2, and Phase 3 all
-fully done). Per the 2026-08-21 scope decision, every chapter (including the
-⭐-optional ones and the originally "notebook-only" 03/05/08/11/18/20/21/22) gets a
-full reference + practice pair — remaining chapters pending in curriculum order
-(Batch 4: 18–23).
+**Complete for all 23 chapters.** Every chapter (including the ⭐-optional ones and
+the originally "notebook-only" 03/05/08/11/18/20/21/22) has a full reference +
+practice notebook pair, per the 2026-08-21 scope decision.
 
 ---
 
 ## 📋 LAB SCRIPT TODO LIST
 
-Complete: `lab_01_airlock_principle.py`, `lab_02_pr_refs.py`,
-`lab_03_merge_strategies.py`, `lab_04_pr_data.py`, `lab_05_branch_protection.py`,
-`lab_06_merge_modes.py`, `lab_07_api_and_apps.py`, `lab_08_actions_anatomy.py`,
-`lab_09_event_matrix.py`, `lab_10_job_outputs.py`, `lab_11_tokens_and_permissions.py`,
-`lab_12_check_runs.py`, `lab_13_why_no_trigger.py`, `lab_14_repo_health.py`,
-`lab_15_pr_health.py`, `lab_16_risk_scoring.py`, `lab_17_airlock.py`.
-
-Pending, per the `CLAUDE.md` Chapter-Notebook-Lab Mapping table plus the promoted
-chapters from the 2026-08-21 scope decision: `lab_18_security.py`,
-`lab_19_calibrate.py`, `lab_20_merge_queues.py`, `lab_21_reusable_workflows.py`,
-`lab_22_buy_vs_build.py`, `lab_23_capstone.py`.
+**Complete for all 23 chapters.** `lab_01_airlock_principle.py` through
+`lab_23_capstone.py` — every chapter now has a matching lab script, including the
+eight originally "notebook-only" chapters (03, 05, 08, 11, 18, 20, 21, 22), promoted
+per the 2026-08-21 scope decision.
 
 Note: `lab_14_repo_health.py` and `lab_15_pr_health.py` should be thin wrappers
 around the logic already implemented and live-verified in `pr_automerge/gates.py`
@@ -129,8 +133,8 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
 - [ ] `PRA_BOT_TOKEN` PAT — not yet minted (this is inherently a browser action; see
       Chapter 07 §14). Until it exists, `automerge.yml` will fail loudly with a clear
       job-summary message rather than silently no-op, by design.
-- [ ] `gates.yml` config file for weights/threshold/ceiling — `RiskConfig` already
-      supports overriding these; the committed config file itself doesn't exist yet
+- [x] `gates.yml` config file for weights/threshold/ceiling — `pr_automerge.scoring.load_config`
+      reads it into a `RiskConfig`; Chapter 19's lab uses it directly
 
 ---
 
@@ -146,6 +150,8 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
 - [x] `fixtures/check_run_response.json` — Chapter 12 (a published check-run response)
 - [x] `fixtures/repo_settings.json` — Chapter 14 (repo-level `allow_auto_merge` read)
 - [x] `fixtures/check_runs_for_sha.json` — Chapter 15 (per-SHA check-run listing)
+- [x] `gates.yml` (repo root) — Chapter 19's live config file, not a fixture, but the
+      other half of the same "config over constants" design (Chapter 16 §9)
 - [x] `resources/gha_event_reference.md`, `resources/token_permission_matrix.md` —
       cheatsheets referenced in `CLAUDE.md`'s repo structure (already written; this line
       was stale — corrected 2026-08-21 batch 1)
@@ -210,3 +216,24 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
   unrelated); all three new labs run cleanly offline; all three reference notebooks
   executed via `nbconvert` and stripped for commit. No `.github/workflows/*.yml`
   files were edited — read-only per the plan's scope.
+
+- **2026-08-21 — Curriculum backfill Batch 4 (Phase 4, Ch 18-23) — CURRICULUM COMPLETE.**
+  Full 20-section content, lab script, and reference + practice notebook pair
+  written for Chapters 18 (Security), 19 (Calibrating the Threshold), 20 (Merge
+  Queues, ⭐), 21 (Reusable Workflows & Composite Actions, ⭐), 22 (Buy vs Build, ⭐),
+  and 23 (Capstone) — closing Phase 4 and the entire 23-chapter curriculum. Chapters
+  20/21/22 were promoted from "notebook-only" per the same scope decision as the
+  earlier batches. Added `gates.yml` (repo root) and
+  `pr_automerge.scoring.load_config` (with a passing doctest) so Chapter 19's
+  calibration lab has a real config file to load, matching Chapter 16 §9's original
+  design promise. Chapter 18's lab implements a real script-injection detector.
+  Chapter 20's lab simulates the exact semantic-conflict gap auto-merge alone can't
+  close. Chapter 21's lab parses this repo's own real `gate2-pr-health.yml`/
+  `gate3-score.yml` (read-only) to find genuine duplicated scaffold steps. Chapter
+  23's capstone composes Chapter 17's `decide()` with a new JSON-lines audit trail,
+  fulfilling Chapter 01 §9's promise with a working `explain_decision()` one-command
+  answer. `FULL_CHAPTERS` and `PAIRED_NOTEBOOKS` extended to cover all 23 chapters;
+  `CLAUDE.md` and `README.md` mapping tables fully filled in. All 153 tests pass (2
+  skipped, pre-existing and unrelated); all six new labs run cleanly offline; all
+  six reference notebooks executed via `nbconvert` and stripped for commit. No
+  `.github/workflows/*.yml` files were edited at any point across all four batches.
