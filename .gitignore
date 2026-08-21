@@ -12,8 +12,8 @@ __pycache__/
 output/*
 !output/.gitkeep
 
-# Sandbox scratch (generated PR content, not curriculum)
-sandbox/generated/
+# NOTE: sandbox/generated/ is intentionally NOT ignored -- generate_pr.py writes
+# there specifically so its output can be committed into a throwaway practice PR.
 
 # OS
 .DS_Store
