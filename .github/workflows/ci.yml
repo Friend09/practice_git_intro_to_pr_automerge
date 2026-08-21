@@ -34,7 +34,9 @@ jobs:
         run: pip install pytest
 
       - name: Run sandbox app tests
-        run: pytest sandbox/app -v
+        # `python -m pytest` (not bare `pytest`) so the repo root lands on sys.path
+        # and `from sandbox.app...` resolves as a namespace package.
+        run: python -m pytest sandbox/app -v
 
       - name: Write job summary
         if: always()

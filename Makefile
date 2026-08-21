@@ -30,8 +30,10 @@ pr:
 	$(PYTHON) sandbox/generate_pr.py --lines $(LINES) --files $(FILES)
 
 # ── Testing ───────────────────────────────────────────────────────────────────
+# python -m pytest (not bare `pytest`) so the repo root lands on sys.path and
+# namespace-package imports like `from sandbox.app...` resolve correctly.
 test:
-	pytest tests/ -v --tb=short
+	$(PYTHON) -m pytest tests/ sandbox/app -v --tb=short
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 clean:
