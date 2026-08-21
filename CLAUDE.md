@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A 22-chapter learning curriculum on GitHub pull-request auto-merge, from Git-level fundamentals
+A 23-chapter learning curriculum on GitHub pull-request auto-merge, from Git-level fundamentals
 through a working 3-gate auto-merge "airlock" built and fired for real against this repo's own
 sandbox. Every chapter includes an **Automation Engineer's Lens** and a **Native vs Custom**
 callout. This repo is unusual among learning repos: it is simultaneously the curriculum *and*
