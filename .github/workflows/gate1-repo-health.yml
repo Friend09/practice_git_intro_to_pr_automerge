@@ -5,7 +5,7 @@
 # issue if any condition regresses. Runs on a schedule but also supports
 # workflow_dispatch so it is testable in seconds rather than waiting a week
 # (see .github/instructions/workflows.instructions.md).
-# Chapter: learning_modules/chapter_13_gate1_repo_readiness.md
+# Chapter: learning_modules/chapter_14_gate1_repo_readiness.md
 
 name: "Gate 1 — Repo Readiness"
 

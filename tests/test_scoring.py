@@ -1,4 +1,4 @@
-"""Unit tests for the Gate 3 risk-scoring engine (Chapter 15).
+"""Unit tests for the Gate 3 risk-scoring engine (Chapter 16).
 
 Pins the exact five-row worked example carried through the chapter, the notebook,
 and the README so the numbers can never drift silently.
@@ -45,7 +45,7 @@ def _pr(lines_add: int, lines_del: int, files: int, critical: int) -> PRMetadata
 def test_compute_risk_matches_worked_example(
     lines_add: int, lines_del: int, files: int, critical: int, expected_risk: float
 ) -> None:
-    """The five-row table in Chapter 15 / README must match this engine exactly."""
+    """The five-row table in Chapter 16 / README must match this engine exactly."""
     pr = _pr(lines_add, lines_del, files, critical)
     assert compute_risk(pr, RiskConfig()) == pytest.approx(expected_risk, abs=0.05)
 
@@ -80,7 +80,7 @@ def test_large_migration_hits_hard_ceiling() -> None:
 
 
 def test_lowering_threshold_can_flip_a_borderline_pr() -> None:
-    """Calibration (Chapter 18): loosening the threshold changes the verdict."""
+    """Calibration (Chapter 19): loosening the threshold changes the verdict."""
     pr = _pr(250, 90, 14, 0)  # risk 172.0
     strict = evaluate_gate3(pr, RiskConfig(threshold=70.0))
     loose = evaluate_gate3(pr, RiskConfig(threshold=200.0))

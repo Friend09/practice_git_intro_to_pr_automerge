@@ -73,7 +73,7 @@ practice_git_intro_to_pr_automerge/
 
 | Item                | Pattern                                  | Example                              |
 | ------------------- | ----------------------------------------- | ------------------------------------- |
-| Chapters            | `learning_modules/chapter_XX_<topic>.md` | `chapter_15_gate3_risk_scoring.md`    |
+| Chapters            | `learning_modules/chapter_XX_<topic>.md` | `chapter_16_gate3_risk_scoring.md`    |
 | Practice Notebooks  | `notebooks/practice_XX.ipynb`            | `practice_15.ipynb`                   |
 | Reference Notebooks | `notebooks/lab_XX_<topic>.ipynb`         | `lab_15_risk_scoring.ipynb`           |
 | Lab scripts         | `labs/lab_XX_<topic>.py`                 | `lab_15_risk_scoring.py`              |
@@ -119,22 +119,23 @@ second file. `—` means the pair has not been backfilled yet.
 | 04  | Reading PR Data                            | practice_04.ipynb  | lab_04_pr_data.ipynb | lab_04_pr_data.py | Core |
 | 05  | Branch Protection & Rulesets               | practice_05.ipynb  | —                     | —                                 | Core        |
 | 06  | Native Auto-Merge vs Your Own Merge Call   | practice_06.ipynb  | lab_06_merge_modes.ipynb | lab_06_merge_modes.py | Core |
-| 07  | Actions Anatomy                            | practice_07.ipynb  | —                     | —                                 | Core        |
-| 08  | The Event Model                            | practice_08.ipynb  | lab_08_event_matrix.ipynb | lab_08_event_matrix.py | Core |
-| 09  | Contexts, Expressions, Outputs & `needs`   | practice_09.ipynb  | lab_09_job_outputs.ipynb | lab_09_job_outputs.py | Core |
-| 10  | Tokens & Permissions                       | practice_10.ipynb  | —                     | —                                 | Core        |
-| 11  | Status Checks, Check Runs & Commit Statuses | practice_11.ipynb | lab_11_check_runs.ipynb | lab_11_check_runs.py | Core |
-| 12  | Debugging Workflows That Didn't Fire       | practice_12.ipynb  | lab_12_why_no_trigger.ipynb | lab_12_why_no_trigger.py | Core |
-| 13  | Gate 1 — Repo Readiness                    | practice_13.ipynb  | lab_13_repo_health.ipynb | lab_13_repo_health.py | Core |
-| 14  | Gate 2 — PR Health                         | practice_14.ipynb  | lab_14_pr_health.ipynb | lab_14_pr_health.py | Core |
-| 15  | Gate 3 — Risk Scoring                      | practice_15.ipynb  | lab_15_risk_scoring.ipynb | lab_15_risk_scoring.py | Core |
-| 16  | Wiring the Airlock                         | practice_16.ipynb  | lab_16_airlock.ipynb | lab_16_airlock.py | Core |
-| 17  | Security                                   | practice_17.ipynb  | —                     | —                                 | Core        |
-| 18  | Calibrating the Threshold                  | practice_18.ipynb  | lab_18_calibrate.ipynb | lab_18_calibrate.py | Core |
-| 19  | Merge Queues                               | practice_19.ipynb  | —                     | —                                 | ⭐ Optional |
-| 20  | Reusable Workflows & Composite Actions     | practice_20.ipynb  | —                     | —                                 | ⭐ Optional |
-| 21  | Buy vs Build                               | practice_21.ipynb  | —                     | —                                 | ⭐ Optional |
-| 22  | Capstone                                   | practice_22.ipynb  | lab_22_capstone.ipynb | lab_22_capstone.py | Core |
+| 07  | The GitHub API In Depth & GitHub Apps      | practice_07.ipynb  | lab_07_api_and_apps.ipynb | lab_07_api_and_apps.py | Core |
+| 08  | Actions Anatomy                            | practice_08.ipynb  | —                     | —                                 | Core        |
+| 09  | The Event Model                            | practice_09.ipynb  | lab_09_event_matrix.ipynb | lab_09_event_matrix.py | Core |
+| 10  | Contexts, Expressions, Outputs & `needs`   | practice_10.ipynb  | lab_10_job_outputs.ipynb | lab_10_job_outputs.py | Core |
+| 11  | Tokens & Permissions                       | practice_11.ipynb  | —                     | —                                 | Core        |
+| 12  | Status Checks, Check Runs & Commit Statuses | practice_12.ipynb | lab_12_check_runs.ipynb | lab_12_check_runs.py | Core |
+| 13  | Debugging Workflows That Didn't Fire       | practice_13.ipynb  | lab_13_why_no_trigger.ipynb | lab_13_why_no_trigger.py | Core |
+| 14  | Gate 1 — Repo Readiness                    | practice_14.ipynb  | lab_14_repo_health.ipynb | lab_14_repo_health.py | Core |
+| 15  | Gate 2 — PR Health                         | practice_15.ipynb  | lab_15_pr_health.ipynb | lab_15_pr_health.py | Core |
+| 16  | Gate 3 — Risk Scoring                      | practice_16.ipynb  | lab_16_risk_scoring.ipynb | lab_16_risk_scoring.py | Core |
+| 17  | Wiring the Airlock                         | practice_17.ipynb  | lab_17_airlock.ipynb | lab_17_airlock.py | Core |
+| 18  | Security                                   | practice_18.ipynb  | —                     | —                                 | Core        |
+| 19  | Calibrating the Threshold                  | practice_19.ipynb  | lab_19_calibrate.ipynb | lab_19_calibrate.py | Core |
+| 20  | Merge Queues                               | practice_20.ipynb  | —                     | —                                 | ⭐ Optional |
+| 21  | Reusable Workflows & Composite Actions     | practice_21.ipynb  | —                     | —                                 | ⭐ Optional |
+| 22  | Buy vs Build                               | practice_22.ipynb  | —                     | —                                 | ⭐ Optional |
+| 23  | Capstone                                   | practice_23.ipynb  | lab_23_capstone.ipynb | lab_23_capstone.py | Core |
 
 ## Gate 3 Scoring Model (locked design decision — do not silently flip)
 
@@ -155,9 +156,9 @@ merge = (risk <= threshold) and (lines_changed <= HARD_CEILING_LINES) and gate1 
 
 This is the opposite convention from the prior-art POC at
 `proj_AI/dev/pr-auto-approve-poc/src/pr_gate/engine.py` (a readiness score, `score >= 0.9` to
-merge). Chapter 15 §7 explains both directions side by side. Config lives in `gates.yml`
+merge). Chapter 16 §7 explains both directions side by side. Config lives in `gates.yml`
 (weights, threshold, ceiling, critical-path globs) — never hard-code these as bare constants;
-`pr-auto-approve-poc` did that and it made recalibration (Ch 18) impossible without a code edit.
+`pr-auto-approve-poc` did that and it made recalibration (Ch 19) impossible without a code edit.
 
 ## Fail-Closed, Not Fail-Open
 
@@ -166,7 +167,7 @@ inversion of the POC's `engine.py`, which treats a missing signal as `skip` — 
 numerator and denominator, so a missing blocker does not block
 (`test_missing_signal_skips_rule_without_failing` asserts `auto_approve is True` there). That is
 fail-open. This repo is fail-**closed** by design — see the Airlock Principle in Ch 01 and the
-worked contrast in Ch 14.
+worked contrast in Ch 15.
 
 ## Research & Verification
 

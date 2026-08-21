@@ -1,11 +1,11 @@
 # Gate 3 — Risk Scoring
-# Fetches the PR's diff metadata, computes the pure-risk score (Chapter 15) via
+# Fetches the PR's diff metadata, computes the pure-risk score (Chapter 16) via
 # pr_automerge.scoring, posts a score-breakdown PR comment, and publishes a check
 # run. Triggered directly on pull_request (not workflow_run) because risk scoring
 # only needs the PR's own metadata -- it has no dependency on CI's outcome, so it
 # can run in parallel with Gate 2 rather than waiting on it. automerge.yml is what
-# combines all three gate verdicts (Chapter 16).
-# Chapter: learning_modules/chapter_15_gate3_risk_scoring.md
+# combines all three gate verdicts (Chapter 17).
+# Chapter: learning_modules/chapter_16_gate3_risk_scoring.md
 
 name: "Gate 3 — Risk Score"
 

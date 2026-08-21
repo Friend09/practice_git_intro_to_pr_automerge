@@ -3,7 +3,7 @@
 This module writes filler content under ``sandbox/generated/`` so that opening a PR
 afterward produces a diff of approximately the requested line and file counts —
 letting you verify Gate 3's risk-scoring verdicts against real GitHub PRs rather than
-only fixtures (Chapter 15's hands-on section, and the verification table in the
+only fixtures (Chapter 16's hands-on section, and the verification table in the
 project plan).
 
 Usage

@@ -61,7 +61,7 @@ def evaluate_gate1(
 def evaluate_gate2(ci_conclusion: str | None) -> GateResult:
     """Evaluate Gate 2 — did this PR's CI/build succeed?
 
-    Fail-closed by design (Chapter 14): a missing or unknown CI conclusion is treated
+    Fail-closed by design (Chapter 15): a missing or unknown CI conclusion is treated
     as a **fail**, never skipped past. This is the deliberate inversion of the
     prior-art POC's ``engine.py``, where a missing signal is ``skip`` and a missing
     *blocker* therefore does not block auto-approval

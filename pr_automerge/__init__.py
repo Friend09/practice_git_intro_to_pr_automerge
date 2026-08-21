@@ -10,7 +10,7 @@ gh_client   : A thin, testable wrapper around the ``gh`` CLI with a fixture-mode
               hatch, so every lab can run offline in CI without a GitHub token.
 models      : Typed dataclasses shared across gates — ``PRMetadata``, ``GateResult``,
               ``Decision``.
-scoring     : The Gate 3 risk-scoring engine (see Chapter 15).
+scoring     : The Gate 3 risk-scoring engine (see Chapter 16).
 render      : The shared "print a summary table" helper every lab uses for its
               terminal output.
 """

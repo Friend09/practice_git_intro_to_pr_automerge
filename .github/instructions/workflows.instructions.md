@@ -16,7 +16,7 @@ schedule, or leak a secret. Treat these rules as load-bearing, not stylistic.
    ```yaml
    # Gate 3 — PR Risk Scoring
    # Reads PR diff metadata, computes a risk score, publishes a check run.
-   # Chapter: learning_modules/chapter_15_gate3_risk_scoring.md
+   # Chapter: learning_modules/chapter_16_gate3_risk_scoring.md
    ```
 
 2. **Explicit `permissions:` block on every job — never inherit the repo default:**

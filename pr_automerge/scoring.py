@@ -1,12 +1,12 @@
 """Gate 3 — the pure-risk PR scoring engine.
 
-Design decision (Chapter 15 §7): this repo scores **risk**, not readiness. Size and
+Design decision (Chapter 16 §7): this repo scores **risk**, not readiness. Size and
 complexity ADD points; a HIGH score means dangerous; a PR merges only when
 ``risk <= threshold``. This is the deliberate opposite of the prior-art POC at
 ``proj_AI/dev/pr-auto-approve-poc/src/pr_gate/engine.py``, which computes a readiness
 ratio (``score = earned_weight / total_weight``, merge at ``score >= 0.9``). Both are
 legitimate designs; what matters is that a repo commits to exactly one and never mixes
-the two mid-pipeline. See Chapter 15 for the full comparison.
+the two mid-pipeline. See Chapter 16 for the full comparison.
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ class RiskConfig:
     """Tunable Gate 3 parameters — read from ``gates.yml`` or ``PRA_THRESHOLD``.
 
     Keeping these in a config object (rather than bare module constants, as the
-    prior-art POC does with ``DEFAULT_THRESHOLD = 0.9``) is what makes Chapter 18's
+    prior-art POC does with ``DEFAULT_THRESHOLD = 0.9``) is what makes Chapter 19's
     threshold calibration possible without editing source.
     """
 

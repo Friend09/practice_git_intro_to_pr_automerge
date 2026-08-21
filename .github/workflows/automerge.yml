@@ -4,7 +4,7 @@
 # and only if all three pass, it QUEUES the PR with `gh pr merge --auto --squash`.
 # It never calls the merge API directly (see Chapter 06's keystone distinction) --
 # GitHub itself performs the merge once every required check reports success.
-# Chapter: learning_modules/chapter_16_wiring_the_airlock.md
+# Chapter: learning_modules/chapter_17_wiring_the_airlock.md
 
 name: "Automerge — Queue on All Gates Green"
 
@@ -21,7 +21,14 @@ permissions:
 jobs:
   maybe-queue-merge:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.event == 'pull_request'
+    # NOTE: do NOT gate this on `github.event.workflow_run.event == 'pull_request'`.
+    # That field reflects the event that triggered the IMMEDIATE parent workflow,
+    # not the root cause -- Gate 3 is directly pull_request-triggered (event =
+    # 'pull_request'), but Gate 2 is itself workflow_run-triggered off CI (event =
+    # 'workflow_run'), so that check silently skipped half of every chain (verified
+    # against a real PR run). Both workflows this job listens to only ever fire in
+    # a PR context, so no extra guard is needed here.
+    if: github.event.workflow_run.head_branch != 'main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4

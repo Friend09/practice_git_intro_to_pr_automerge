@@ -7,7 +7,7 @@
 # don't trigger downstream workflows" trap. CI itself runs on a human-authored
 # pull_request event, so this chain never actually hits that trap -- but the pattern
 # here is the one you reach for the moment any link in the chain is bot-authored.
-# Chapter: learning_modules/chapter_14_gate2_pr_health.md
+# Chapter: learning_modules/chapter_15_gate2_pr_health.md
 
 name: "Gate 2 — PR Health"
 

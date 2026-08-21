@@ -17,7 +17,7 @@ class GateStatus(str, Enum):
     ``SKIP`` exists so a gate can honestly report "I had no data to evaluate" — but
     unlike the prior-art POC (``pr-auto-approve-poc``), this repo treats a ``SKIP`` on
     a required gate as equivalent to ``FAIL`` when computing the final merge decision.
-    See Chapter 14 for the fail-closed vs fail-open discussion.
+    See Chapter 15 for the fail-closed vs fail-open discussion.
     """
 
     PASS = "pass"

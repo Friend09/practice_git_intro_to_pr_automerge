@@ -1,6 +1,6 @@
 # Intro to PR Auto-Merge
 
-## A 22-Chapter Curriculum — 4 Phases, Built on a Live Sandbox Repo
+## A 23-Chapter Curriculum — 4 Phases, Built on a Live Sandbox Repo
 
 > **Philosophy:** `main` is a sealed chamber. Nothing enters except through a sequence of doors,
 > each of which opens only when the one before it is verified shut.
@@ -24,7 +24,7 @@ file before (even a trivial one), has a GitHub account with a repo you can exper
 
 ---
 
-## Curriculum Overview — 22 Chapters, 4 Phases
+## Curriculum Overview — 23 Chapters, 4 Phases
 
 ⭐ = Optional Deep-Dive (can skip on first pass, return when ready)
 
@@ -39,39 +39,40 @@ file before (even a trivial one), has a GitHub account with a repo you can exper
 | 05  | Branch Protection & Rulesets                                             | 📓 practice_05              | Core  | ~45 min |
 | 06  | **Native Auto-Merge vs Your Own Merge Call**                             | 📓 practice_06 · 🐍 lab_06 | Core  | ~50 min |
 
-### Phase 2 — GitHub Actions Mechanics _(Chapters 7–12)_
+### Phase 2 — The GitHub API & Actions Mechanics _(Chapters 7–13)_
 
 | Ch  | Title                                                                   | Lab                        | Depth | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
-| 07  | Actions Anatomy: Workflows, Jobs, Steps, Runners                        | 📓 practice_07              | Core  | ~40 min |
-| 08  | The Event Model: `pull_request`, `pull_request_target`, `schedule`, …   | 📓 practice_08 · 🐍 lab_08 | Core  | ~50 min |
-| 09  | Contexts, Expressions, Outputs & `needs`                                | 📓 practice_09 · 🐍 lab_09 | Core  | ~45 min |
-| 10  | **Tokens & Permissions** — the no-downstream-trigger rule                | 📓 practice_10              | Core  | ~50 min |
-| 11  | Status Checks, Check Runs & Commit Statuses                             | 📓 practice_11 · 🐍 lab_11 | Core  | ~40 min |
-| 12  | Debugging Workflows That Didn't Fire                                    | 📓 practice_12 · 🐍 lab_12 | Core  | ~40 min |
+| 07  | **The GitHub API In Depth: Pulling & Pushing Data, and GitHub Apps**    | 📓 practice_07 · 🐍 lab_07 | Core  | ~55 min |
+| 08  | Actions Anatomy: Workflows, Jobs, Steps, Runners                        | 📓 practice_08              | Core  | ~40 min |
+| 09  | The Event Model: `pull_request`, `pull_request_target`, `schedule`, …   | 📓 practice_09 · 🐍 lab_09 | Core  | ~50 min |
+| 10  | Contexts, Expressions, Outputs & `needs`                                | 📓 practice_10 · 🐍 lab_10 | Core  | ~45 min |
+| 11  | **Tokens & Permissions** — the no-downstream-trigger rule                | 📓 practice_11              | Core  | ~50 min |
+| 12  | Status Checks, Check Runs & Commit Statuses                             | 📓 practice_12 · 🐍 lab_12 | Core  | ~40 min |
+| 13  | Debugging Workflows That Didn't Fire                                    | 📓 practice_13 · 🐍 lab_13 | Core  | ~40 min |
 
-### Phase 3 — Building the Three Gates _(Chapters 13–16)_
+### Phase 3 — Building the Three Gates _(Chapters 14–17)_
 
 | Ch  | Title                                                                   | Lab                        | Depth | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
-| 13  | Gate 1 — Repo Readiness + the Weekly Health Cron                        | 📓 practice_13 · 🐍 lab_13 | Core  | ~45 min |
-| 14  | Gate 2 — PR Health: Fail-Closed vs Fail-Open                            | 📓 practice_14 · 🐍 lab_14 | Core  | ~45 min |
-| 15  | **Gate 3 — Risk Scoring**                                                | 📓 practice_15 · 🐍 lab_15 | Core  | ~55 min |
-| 16  | Wiring the Airlock: Chaining 1→2→3→Merge                                | 📓 practice_16 · 🐍 lab_16 | Core  | ~50 min |
+| 14  | Gate 1 — Repo Readiness + the Weekly Health Cron                        | 📓 practice_14 · 🐍 lab_14 | Core  | ~45 min |
+| 15  | Gate 2 — PR Health: Fail-Closed vs Fail-Open                            | 📓 practice_15 · 🐍 lab_15 | Core  | ~45 min |
+| 16  | **Gate 3 — Risk Scoring**                                                | 📓 practice_16 · 🐍 lab_16 | Core  | ~55 min |
+| 17  | Wiring the Airlock: Chaining 1→2→3→Merge                                | 📓 practice_17 · 🐍 lab_17 | Core  | ~50 min |
 
-### Phase 4 — Hardening, Scale & Operations _(Chapters 17–22)_
+### Phase 4 — Hardening, Scale & Operations _(Chapters 18–23)_
 
 | Ch  | Title                                                                   | Lab                        | Depth       | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----------- | ------- |
-| 17  | Security: `pull_request_target` & Fork PRs                              | 📓 practice_17              | Core        | ~50 min |
-| 18  | Calibrating the Threshold                                                | 📓 practice_18 · 🐍 lab_18 | Core        | ~50 min |
-| 19  | Merge Queues                                                             | 📓 practice_19              | ⭐ Optional | ~40 min |
-| 20  | Reusable Workflows & Composite Actions                                  | 📓 practice_20              | ⭐ Optional | ~40 min |
-| 21  | Buy vs Build: Mergify, Kodiak, Renovate                                 | 📓 practice_21              | ⭐ Optional | ~35 min |
-| 22  | **Capstone**: The Complete Airlock, Audit Trail & Rollback              | 📓 practice_22 · 🐍 lab_22 | Core        | ~60 min |
+| 18  | Security: `pull_request_target` & Fork PRs                              | 📓 practice_18              | Core        | ~50 min |
+| 19  | Calibrating the Threshold                                                | 📓 practice_19 · 🐍 lab_19 | Core        | ~50 min |
+| 20  | Merge Queues                                                             | 📓 practice_20              | ⭐ Optional | ~40 min |
+| 21  | Reusable Workflows & Composite Actions                                  | 📓 practice_21              | ⭐ Optional | ~40 min |
+| 22  | Buy vs Build: Mergify, Kodiak, Renovate                                 | 📓 practice_22              | ⭐ Optional | ~35 min |
+| 23  | **Capstone**: The Complete Airlock, Audit Trail & Rollback              | 📓 practice_23 · 🐍 lab_23 | Core        | ~60 min |
 
-**Total reading (Core only, ~18 chapters):** ~13–14 hours
-**Total reading (all 22 chapters):** ~16–18 hours
+**Total reading (Core only, ~20 chapters):** ~14–15 hours
+**Total reading (all 23 chapters):** ~17–19 hours
 
 ---
 
@@ -79,10 +80,10 @@ file before (even a trivial one), has a GitHub account with a repo you can exper
 
 | Gate | Question it answers | Primary chapters | Supporting chapters |
 | ---- | -------------------- | ------------------ | --------------------- |
-| **1 — Repo Readiness** | Is this repo even eligible for auto-merge? | 05, 13 | — |
-| **2 — PR Health** | Did CI succeed on this PR? | 11, 14 | 04 |
-| **3 — Risk Scoring** | Given the diff, is this PR safe to merge unattended? | 04, 15, 18 | — |
-| **Wiring** | How do the three gates connect to an actual merge? | 06, 10, 16 | — |
+| **1 — Repo Readiness** | Is this repo even eligible for auto-merge? | 05, 14 | 07 |
+| **2 — PR Health** | Did CI succeed on this PR? | 12, 15 | 04 |
+| **3 — Risk Scoring** | Given the diff, is this PR safe to merge unattended? | 04, 16, 19 | 07 |
+| **Wiring** | How do the three gates connect to an actual merge? | 06, 07, 11, 17 | — |
 
 ---
 
@@ -99,15 +100,16 @@ material, *Pro Git* (Chacon & Straub, free at git-scm.com/book).
 | Ch 04 | REST API — Pulls | — |
 | Ch 05 | "About protected branches", "Rulesets" | — |
 | Ch 06 | "Automatically merging a pull request" | — |
-| Ch 07–09 | "Understanding GitHub Actions" | — |
-| Ch 08 | "Events that trigger workflows" | — |
-| Ch 10 | "Automatic token authentication" | — |
-| Ch 11 | "About status checks" | — |
-| Ch 12 | "Using workflow run logs" | — |
-| Ch 13–16 | (this repo's own design — no canonical doc) | — |
-| Ch 17 | "Security hardening for GitHub Actions" | — |
-| Ch 19 | "Merging a pull request with a merge queue" | — |
-| Ch 21 | Mergify / Kodiak / Renovate docs | — |
+| Ch 07 | REST API overview, "About creating GitHub Apps", "Differences between GitHub Apps and OAuth apps" | — |
+| Ch 08–10 | "Understanding GitHub Actions" | — |
+| Ch 09 | "Events that trigger workflows" | — |
+| Ch 11 | "Automatic token authentication" | — |
+| Ch 12 | "About status checks" | — |
+| Ch 13 | "Using workflow run logs" | — |
+| Ch 14–17 | (this repo's own design — no canonical doc) | — |
+| Ch 18 | "Security hardening for GitHub Actions" | — |
+| Ch 20 | "Merging a pull request with a merge queue" | — |
+| Ch 22 | Mergify / Kodiak / Renovate docs | — |
 
 ---
 
@@ -115,9 +117,9 @@ material, *Pro Git* (Chacon & Straub, free at git-scm.com/book).
 
 | Pace         | Hours/Week | Chapters                     | Duration  |
 | ------------ | ---------- | ----------------------------- | --------- |
-| 🐢 Relaxed   | 3–4 hrs    | Core only (~18 chapters)     | ~14 weeks |
-| 🚶 Moderate  | 5–6 hrs    | Core + selected ⭐ chapters   | ~10 weeks |
-| 🏃 Intensive | 8–10 hrs   | All 22 chapters               | ~7 weeks  |
+| 🐢 Relaxed   | 3–4 hrs    | Core only (~20 chapters)     | ~15 weeks |
+| 🚶 Moderate  | 5–6 hrs    | Core + selected ⭐ chapters   | ~11 weeks |
+| 🏃 Intensive | 8–10 hrs   | All 23 chapters               | ~8 weeks  |
 
 ---
 
@@ -125,7 +127,7 @@ material, *Pro Git* (Chacon & Straub, free at git-scm.com/book).
 
 ```
 practice_git_intro_to_pr_automerge/
-├── learning_modules/     # 22 chapters (chapter_XX_<topic>.md)
+├── learning_modules/     # 23 chapters (chapter_XX_<topic>.md)
 ├── notebooks/            # practice notebooks (practice_XX.ipynb) + reference notebooks (lab_XX_<topic>.ipynb)
 ├── labs/                 # importable gate logic (lab_XX_<topic>.py)
 ├── sandbox/              # generate throwaway PRs of known size — the only paths the gates watch
@@ -203,4 +205,4 @@ public rather than hitting that wall at Chapter 5.
 **Why one repo does two jobs:** the curriculum and the live lab share a repo for simplicity. Every
 gate workflow is scoped with `paths: ['sandbox/**']`, so opening a PR that edits
 `learning_modules/`, `labs/`, or `notebooks/` never triggers auto-merge — only PRs touching
-`sandbox/` do. See Chapter 16 §3.
+`sandbox/` do. See Chapter 17 §3.

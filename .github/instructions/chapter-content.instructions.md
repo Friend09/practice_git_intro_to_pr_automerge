@@ -105,4 +105,4 @@ Every chapter must start with this metadata block:
   mathematical, but the Gate 3 scoring formula is)
 - Add "In plain English:" before every formula
 - Include a numerical example after every formula, using the running PR-size worked example
-  (see Chapter 15) wherever possible
+  (see Chapter 16) wherever possible
