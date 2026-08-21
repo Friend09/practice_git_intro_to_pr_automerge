@@ -21,14 +21,20 @@ permissions:
 jobs:
   maybe-queue-merge:
     runs-on: ubuntu-latest
-    # NOTE: do NOT gate this on `github.event.workflow_run.event == 'pull_request'`.
-    # That field reflects the event that triggered the IMMEDIATE parent workflow,
-    # not the root cause -- Gate 3 is directly pull_request-triggered (event =
-    # 'pull_request'), but Gate 2 is itself workflow_run-triggered off CI (event =
-    # 'workflow_run'), so that check silently skipped half of every chain (verified
-    # against a real PR run). Both workflows this job listens to only ever fire in
-    # a PR context, so no extra guard is needed here.
-    if: github.event.workflow_run.head_branch != 'main'
+    # NOTE: this job carries NO `if:` filter on github.event.workflow_run.event or
+    # .head_branch, and that is deliberate -- both were tried and both broke,
+    # verified against real chained runs (Chapter 17 walks through this):
+    #   - `.event == 'pull_request'` fails for the hop from Gate 2, because Gate 2
+    #     is itself workflow_run-triggered (off CI), so ITS .event reads
+    #     'workflow_run', not 'pull_request'.
+    #   - `.head_branch != 'main'` ALSO fails on that same hop: any
+    #     workflow_run-triggered workflow always executes against the default
+    #     branch, so by the second hop in the chain the payload's head_branch has
+    #     already collapsed to "main" even though the underlying PR branch never
+    #     changed. `.head_sha`, by contrast, stays correct through every hop --
+    #     it's what this job actually keys off of below.
+    # Both workflows this job listens to (Gate 2, Gate 3) only ever fire in a real
+    # PR context, so no extra guard is needed to keep this job scoped correctly.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,7 +60,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           python3 - <<'PY'
           import json
@@ -63,7 +68,6 @@ jobs:
 
           repo = os.environ["REPO"]
           sha = os.environ["HEAD_SHA"]
-          branch = os.environ["HEAD_BRANCH"]
 
           def gh(*args):
               return subprocess.run(["gh", *args], capture_output=True, text=True)
@@ -92,13 +96,19 @@ jobs:
               print("Not all gates green yet -- nothing to queue.")
               raise SystemExit(0)
 
-          pr_result = gh("pr", "list", "--repo", repo, "--head", branch, "--state", "open", "--json", "number")
+          # Look up the PR by commit SHA, not by branch name -- head_branch on the
+          # workflow_run event payload is unreliable past the first chained hop
+          # (see the job-level comment above). The commits/{sha}/pulls endpoint
+          # gives the associated PR directly from the SHA, which stays correct
+          # through the whole chain.
+          pr_result = gh("api", f"repos/{repo}/commits/{sha}/pulls")
           prs = json.loads(pr_result.stdout) if pr_result.returncode == 0 else []
-          if not prs:
-              print(f"No open PR found for branch {branch!r} -- nothing to queue.")
+          open_prs = [p for p in prs if p.get("state") == "open"]
+          if not open_prs:
+              print(f"No open PR found for commit {sha!r} -- nothing to queue.")
               raise SystemExit(0)
 
-          pr_number = str(prs[0]["number"])
+          pr_number = str(open_prs[0]["number"])
           merge_result = gh("pr", "merge", pr_number, "--repo", repo, "--auto", "--squash")
           print(merge_result.stdout)
           if merge_result.returncode != 0:
