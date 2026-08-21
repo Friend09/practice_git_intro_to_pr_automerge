@@ -56,16 +56,13 @@ def test_schedule_pairs_with_workflow_dispatch(path: Path) -> None:
         )
 
 
-@pytest.mark.parametrize(
-    "path",
-    [p for p in _workflow_files() if p.name.startswith("gate")],
-    ids=lambda p: p.name,
-)
-def test_gate_workflows_scope_to_sandbox_paths(path: Path) -> None:
-    """Every gateN-*.yml must filter pull_request events to sandbox/** only.
-
-    This is the guard that stops the airlock from ever acting on a PR that only
-    edits curriculum content (learning_modules/, labs/, notebooks/).
+@pytest.mark.parametrize("path", _workflow_files(), ids=lambda p: p.name)
+def test_pull_request_triggers_scope_to_sandbox_paths(path: Path) -> None:
+    """Every workflow directly triggered by pull_request must filter to sandbox/**
+    only -- this is the guard that stops the airlock from ever acting on a PR that
+    only edits curriculum content (learning_modules/, labs/, notebooks/). Applies
+    to any pull_request-triggered file, not just files literally named gate*.yml
+    (automerge.yml is triggered this way too, and needs the same guard).
     """
     doc = yaml.safe_load(path.read_text())
     on = doc.get("on") or doc.get(True)

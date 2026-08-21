@@ -1,118 +1,48 @@
 # Automerge — the wiring, not the merge
-# Fires after either Gate 2 or Gate 3 completes. Reads Gate 1's committed
-# readiness.json plus both gates' check-run conclusions for the PR's head SHA; if
-# and only if all three pass, it QUEUES the PR with `gh pr merge --auto --squash`.
-# It never calls the merge API directly (see Chapter 06's keystone distinction) --
-# GitHub itself performs the merge once every required check reports success.
+# QUEUES every qualifying PR for native auto-merge with `gh pr merge --auto
+# --squash`. It never decides pass/fail itself and never calls the direct merge
+# API -- see Chapter 06's keystone distinction. GitHub itself performs the merge
+# only once every REQUIRED status check (test, gate2-pr-health, gate3-risk-score)
+# reports success; Gate 1's readiness additionally gates the repo-level
+# `allow_auto_merge` switch itself (gate1-repo-health.yml flips it off the moment
+# repo readiness regresses), so an unready repo can't auto-merge at all regardless
+# of what this workflow does.
+#
+# DESIGN NOTE (Chapter 17 covers this in full): an earlier version of this
+# workflow tried to manually recompute "did gate1/gate2/gate3 all pass" by
+# chaining off `workflow_run` events from Gate 2 and Gate 3, then reading
+# `github.event.workflow_run.head_sha` to find which PR to act on. That SHA is
+# only reliable on the FIRST hop of a workflow_run chain -- Gate 3 is directly
+# pull_request-triggered so its head_sha is always correct, but Gate 2 is itself
+# workflow_run-triggered (off CI), and any workflow_run-triggered run's own
+# head_sha/head_branch metadata collapses to the default branch's context. Verified
+# empirically against this exact sandbox repo: the manual recomputation silently
+# read the wrong commit on the Gate-2-triggered hop and never queued the merge.
+# The fix is this file: don't recompute the verdict at all -- required status
+# checks plus native auto-merge already do that correctly, for free.
 # Chapter: learning_modules/chapter_17_wiring_the_airlock.md
 
-name: "Automerge — Queue on All Gates Green"
+name: "Automerge — Queue on Open/Update"
 
 on:
-  workflow_run:
-    workflows: ["Gate 2 — PR Health", "Gate 3 — Risk Score"]
-    types: [completed]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'sandbox/**'
 
 permissions:
   contents: read
   pull-requests: write
-  checks: read
 
 jobs:
-  maybe-queue-merge:
+  queue:
     runs-on: ubuntu-latest
-    # NOTE: this job carries NO `if:` filter on github.event.workflow_run.event or
-    # .head_branch, and that is deliberate -- both were tried and both broke,
-    # verified against real chained runs (Chapter 17 walks through this):
-    #   - `.event == 'pull_request'` fails for the hop from Gate 2, because Gate 2
-    #     is itself workflow_run-triggered (off CI), so ITS .event reads
-    #     'workflow_run', not 'pull_request'.
-    #   - `.head_branch != 'main'` ALSO fails on that same hop: any
-    #     workflow_run-triggered workflow always executes against the default
-    #     branch, so by the second hop in the chain the payload's head_branch has
-    #     already collapsed to "main" even though the underlying PR branch never
-    #     changed. `.head_sha`, by contrast, stays correct through every hop --
-    #     it's what this job actually keys off of below.
-    # Both workflows this job listens to (Gate 2, Gate 3) only ever fire in a real
-    # PR context, so no extra guard is needed to keep this job scoped correctly.
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Read readiness.json from gate-status branch
-        id: readiness
-        # gate1-repo-health.yml publishes readiness.json to this dedicated,
-        # unprotected branch rather than to main -- main's branch protection
-        # rejects direct bot pushes (see that workflow's comment). The branch may
-        # not exist yet if Gate 1 has never run -- fail closed in that case.
-        run: |
-          if git fetch origin gate-status 2>/dev/null && git show origin/gate-status:readiness.json > readiness.json 2>/dev/null; then
-            echo "found readiness.json on gate-status"
-          else
-            echo '{"ready": false}' > readiness.json
-            echo "gate-status branch or readiness.json not found -- treating Gate 1 as NOT ready"
-          fi
-
-      - name: Evaluate all three gates and queue merge if green
+      - name: Queue native auto-merge for this PR
         env:
           GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          python3 - <<'PY'
-          import json
-          import os
-          import subprocess
-
-          repo = os.environ["REPO"]
-          sha = os.environ["HEAD_SHA"]
-
-          def gh(*args):
-              return subprocess.run(["gh", *args], capture_output=True, text=True)
-
-          # Gate 1 -- read the last committed readiness badge on main.
-          gate1_ready = False
-          try:
-              with open("readiness.json") as f:
-                  gate1_ready = json.load(f).get("ready", False)
-          except FileNotFoundError:
-              pass  # gate1 has never run yet -- treat as not ready (fail-closed)
-
-          # Gates 2 and 3 -- read their published check-run conclusions for this SHA.
-          result = gh("api", f"repos/{repo}/commits/{sha}/check-runs")
-          check_runs = json.loads(result.stdout).get("check_runs", []) if result.returncode == 0 else []
-          conclusions = {c["name"]: c["conclusion"] for c in check_runs}
-
-          gate2_pass = conclusions.get("gate2-pr-health") == "success"
-          gate3_pass = conclusions.get("gate3-risk-score") == "success"
-
-          all_pass = gate1_ready and gate2_pass and gate3_pass
-
-          print(f"gate1_ready={gate1_ready} gate2_pass={gate2_pass} gate3_pass={gate3_pass}")
-
-          if not all_pass:
-              print("Not all gates green yet -- nothing to queue.")
-              raise SystemExit(0)
-
-          # Look up the PR by commit SHA, not by branch name -- head_branch on the
-          # workflow_run event payload is unreliable past the first chained hop
-          # (see the job-level comment above). The commits/{sha}/pulls endpoint
-          # gives the associated PR directly from the SHA, which stays correct
-          # through the whole chain.
-          pr_result = gh("api", f"repos/{repo}/commits/{sha}/pulls")
-          prs = json.loads(pr_result.stdout) if pr_result.returncode == 0 else []
-          open_prs = [p for p in prs if p.get("state") == "open"]
-          if not open_prs:
-              print(f"No open PR found for commit {sha!r} -- nothing to queue.")
-              raise SystemExit(0)
-
-          pr_number = str(open_prs[0]["number"])
-          merge_result = gh("pr", "merge", pr_number, "--repo", repo, "--auto", "--squash")
-          print(merge_result.stdout)
-          if merge_result.returncode != 0:
-              print(f"gh pr merge --auto failed: {merge_result.stderr}")
-          else:
-              print(f"PR #{pr_number} queued for native auto-merge (squash).")
-          PY
+          gh pr merge "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --auto --squash \
+          || echo "gh pr merge --auto failed -- likely Gate 1 has allow_auto_merge disabled, or protection isn't fully configured yet. See job summary / Chapter 14."

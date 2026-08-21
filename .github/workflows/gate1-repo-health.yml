@@ -1,10 +1,14 @@
 # Gate 1 — Repository Readiness
-# Weekly health check: confirms `main` exists, branch protection/rulesets are
-# configured, at least one required status check is registered, and repo-level
-# auto-merge is enabled. Writes readiness.json as a committed badge and opens an
-# issue if any condition regresses. Runs on a schedule but also supports
-# workflow_dispatch so it is testable in seconds rather than waiting a week
-# (see .github/instructions/workflows.instructions.md).
+# Weekly health check: confirms `main` exists and branch protection is configured,
+# then ACTIVELY ENFORCES readiness rather than merely observing it -- it flips the
+# repo-level `allow_auto_merge` setting on when both conditions hold, and OFF the
+# moment either regresses. This is what makes Gate 1 fail-closed at the platform
+# level: automerge.yml (Chapter 17) can call `gh pr merge --auto` all it wants, but
+# if allow_auto_merge is off, GitHub itself refuses the call -- no coordination
+# between workflows is needed for Gate 1 to block. Writes readiness.json as a
+# committed badge and opens an issue if readiness regresses. Runs on a schedule but
+# also supports workflow_dispatch so it is testable in seconds rather than waiting
+# a week (see .github/instructions/workflows.instructions.md).
 # Chapter: learning_modules/chapter_14_gate1_repo_readiness.md
 
 name: "Gate 1 — Repo Readiness"
@@ -66,6 +70,12 @@ jobs:
           # here as the honest, token-limited signal. A PRA_BOT_TOKEN PAT would let
           # this distinguish "protected" from "protected AND has required checks".
           required_checks_registered = protection_configured
+
+          # ENFORCE, don't just observe: auto-merge should only be possible when
+          # main exists and is protected. Flip the repo setting to match, in
+          # either direction -- this is Gate 1 acting, not just reporting.
+          desired_auto_merge = main_exists and protection_configured
+          gh("api", "-X", "PATCH", f"repos/{repo}", "-F", f"allow_auto_merge={str(desired_auto_merge).lower()}")
 
           rc, out, _ = gh("api", f"repos/{repo}")
           auto_merge_enabled = False
