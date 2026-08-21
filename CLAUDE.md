@@ -115,9 +115,9 @@ second file. `—` means the pair has not been backfilled yet.
 | --- | ------------------------------------------ | ------------------ | -------------------- | -------------------------------- | ----------- |
 | 01  | Auto-Merge & The Airlock Principle         | practice_01.ipynb  | lab_01_airlock_principle.ipynb | lab_01_airlock_principle.py | Core |
 | 02  | Refs, Branches & What a PR Really Is       | practice_02.ipynb  | lab_02_pr_refs.ipynb | lab_02_pr_refs.py | Core |
-| 03  | Merge Commit vs Squash vs Rebase           | practice_03.ipynb  | —                     | —                                 | Core        |
+| 03  | Merge Commit vs Squash vs Rebase           | practice_03.ipynb  | lab_03_merge_strategies.ipynb | lab_03_merge_strategies.py | Core |
 | 04  | Reading PR Data                            | practice_04.ipynb  | lab_04_pr_data.ipynb | lab_04_pr_data.py | Core |
-| 05  | Branch Protection & Rulesets               | practice_05.ipynb  | —                     | —                                 | Core        |
+| 05  | Branch Protection & Rulesets               | practice_05.ipynb  | lab_05_branch_protection.ipynb | lab_05_branch_protection.py | Core |
 | 06  | Native Auto-Merge vs Your Own Merge Call   | practice_06.ipynb  | lab_06_merge_modes.ipynb | lab_06_merge_modes.py | Core |
 | 07  | The GitHub API In Depth & GitHub Apps      | practice_07.ipynb  | lab_07_api_and_apps.ipynb | lab_07_api_and_apps.py | Core |
 | 08  | Actions Anatomy                            | practice_08.ipynb  | —                     | —                                 | Core        |

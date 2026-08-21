@@ -1,0 +1,9 @@
+{
+  "refs": [
+    {"ref": "refs/heads/main", "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736"},
+    {"ref": "refs/pull/101/head", "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"},
+    {"ref": "refs/pull/101/merge", "sha": "9182736450f1e2d3c4b5a69788796a5b4c3d2e1"},
+    {"ref": "refs/pull/102/head", "sha": "5a69788796a5b4c3d2e1f009182736450f1e2d3"},
+    {"ref": "refs/pull/102/merge", "sha": "c3d2e1f009182736450f1e2d3c4b5a69788796a"}
+  ]
+}

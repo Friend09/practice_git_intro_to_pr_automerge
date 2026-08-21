@@ -14,10 +14,16 @@ None currently.
 
 - [x] Chapter 01: Auto-Merge & The Airlock Principle
   - Full 20-section content, lab, reference + practice notebook pair — all complete
-- [ ] Chapter 02: Refs, Branches & What a PR Really Is (stub only)
-- [ ] Chapter 03: Merge Commit vs Squash vs Rebase (stub only)
-- [ ] Chapter 04: Reading PR Data (stub only)
-- [ ] Chapter 05: Branch Protection & Rulesets (stub only)
+- [x] Chapter 02: Refs, Branches & What a PR Really Is
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
+- [x] Chapter 03: Merge Commit vs Squash vs Rebase
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Promoted from notebook-only to a full lab per explicit user request (batch backfill).
+- [x] Chapter 04: Reading PR Data
+  - Full 20-section content, lab, reference + practice notebook pair — all complete
+- [x] Chapter 05: Branch Protection & Rulesets
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Promoted from notebook-only to a full lab per explicit user request (batch backfill).
 - [x] Chapter 06: Native Auto-Merge vs Your Own Merge Call
   - Full 20-section content, lab, reference + practice notebook pair — all complete
 
@@ -60,22 +66,27 @@ None currently.
 
 ## 📋 NOTEBOOK TODO LIST
 
-Reference + practice pairs complete for Ch 01, 06, 07, 16. All others pending, in the
-same order as the chapter backlog above — a chapter's prose should exist before its
-notebook pair, since the notebook narrates against the chapter's own vocabulary.
+Reference + practice pairs complete for Ch 01, 02, 03, 04, 05, 06, 07, 16. Per the
+2026-08-21 scope decision, every chapter (including the ⭐-optional ones and the
+originally "notebook-only" 03/05/08/11/18/20/21/22) gets a full reference + practice
+pair — remaining chapters pending in curriculum order (Batch 2: 08–13, Batch 3:
+14/15/17, Batch 4: 18–23).
 
 ---
 
 ## 📋 LAB SCRIPT TODO LIST
 
-Complete: `lab_01_airlock_principle.py`, `lab_06_merge_modes.py`,
-`lab_07_api_and_apps.py`, `lab_16_risk_scoring.py`.
+Complete: `lab_01_airlock_principle.py`, `lab_02_pr_refs.py`,
+`lab_03_merge_strategies.py`, `lab_04_pr_data.py`, `lab_05_branch_protection.py`,
+`lab_06_merge_modes.py`, `lab_07_api_and_apps.py`, `lab_16_risk_scoring.py`.
 
-Pending, per the `CLAUDE.md` Chapter-Notebook-Lab Mapping table: `lab_02_pr_refs.py`,
-`lab_04_pr_data.py`, `lab_09_event_matrix.py`, `lab_10_job_outputs.py`,
+Pending, per the `CLAUDE.md` Chapter-Notebook-Lab Mapping table plus the eight
+promoted chapters from the 2026-08-21 scope decision: `lab_08_actions_anatomy.py`,
+`lab_09_event_matrix.py`, `lab_10_job_outputs.py`, `lab_11_tokens_and_permissions.py`,
 `lab_12_check_runs.py`, `lab_13_why_no_trigger.py`, `lab_14_repo_health.py`,
-`lab_15_pr_health.py`, `lab_17_airlock.py`, `lab_19_calibrate.py`,
-`lab_23_capstone.py`.
+`lab_15_pr_health.py`, `lab_17_airlock.py`, `lab_18_security.py`,
+`lab_19_calibrate.py`, `lab_20_merge_queues.py`, `lab_21_reusable_workflows.py`,
+`lab_22_buy_vs_build.py`, `lab_23_capstone.py`.
 
 Note: `lab_14_repo_health.py` and `lab_15_pr_health.py` should be thin wrappers
 around the logic already implemented and live-verified in `pr_automerge/gates.py`
@@ -116,8 +127,14 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
 
 - [x] `fixtures/pr_typo_fix.json`, `pr_small_feature.json`, `pr_workflow_touch.json`,
       `pr_refactor.json`, `pr_large_migration.json` — the Chapter 16 worked example
-- [ ] `resources/gha_event_reference.md`, `resources/token_permission_matrix.md` —
-      cheatsheets referenced in `CLAUDE.md`'s repo structure but not yet written
+- [x] `fixtures/pr_raw_pull.json`, `git_refs_sample.json` — Chapter 02 (raw PR object with
+      `mergeable_state`, and a plain git refs listing)
+- [x] `fixtures/pr_list_sample.json` — Chapter 04 (a 12-PR list for pagination demos)
+- [x] `fixtures/branch_light_status.json`, `branch_protection_full.json` — Chapter 05
+      (the two branch-protection read shapes)
+- [x] `resources/gha_event_reference.md`, `resources/token_permission_matrix.md` —
+      cheatsheets referenced in `CLAUDE.md`'s repo structure (already written; this line
+      was stale — corrected 2026-08-21 batch 1)
 
 ---
 
@@ -131,3 +148,16 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
   explicit request; all chapters 07+ renumbered. Four chapters written to full
   20-section depth (01, 06, 07, 16) with matching labs and notebook pairs; the
   remaining 19 are header-block stubs with correct metadata.
+
+- **2026-08-21 — Curriculum backfill Batch 1 (Phase 1, Ch 02-05).** Full 20-section
+  content, lab script, and reference + practice notebook pair written for Chapters 02
+  (Refs, Branches & What a PR Really Is), 03 (Merge Commit vs Squash vs Rebase), 04
+  (Reading PR Data), and 05 (Branch Protection & Rulesets). Chapters 03 and 05 were
+  promoted from "notebook-only" to full lab + reference-notebook chapters per the
+  user's explicit scope decision, so every practice notebook in the curriculum has an
+  answer key. Four new fixture files added (`pr_raw_pull`, `git_refs_sample`,
+  `pr_list_sample`, `branch_light_status`, `branch_protection_full`). `FULL_CHAPTERS`
+  and `PAIRED_NOTEBOOKS` extended in the test suite; `CLAUDE.md` and `README.md`
+  mapping tables updated. All 93 tests pass (2 skipped, pre-existing and unrelated);
+  all four new labs run cleanly offline in fixture mode; all four reference notebooks
+  executed via `nbconvert` and stripped for commit.

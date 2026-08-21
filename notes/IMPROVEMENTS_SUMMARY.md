@@ -8,10 +8,10 @@ forward backlog.
 | # | Chapter | Status | Date | Notes |
 | - | ------- | ------ | ---- | ----- |
 | 01 | Auto-Merge & The Airlock Principle | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
-| 02 | Refs, Branches & What a PR Really Is | 📋 Planned | — | Stub only |
-| 03 | Merge Commit vs Squash vs Rebase | 📋 Planned | — | Stub only |
-| 04 | Reading PR Data | 📋 Planned | — | Stub only |
-| 05 | Branch Protection & Rulesets | 📋 Planned | — | Stub only |
+| 02 | Refs, Branches & What a PR Really Is | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
+| 03 | Merge Commit vs Squash vs Rebase | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
+| 04 | Reading PR Data | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
+| 05 | Branch Protection & Rulesets | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
 | 06 | Native Auto-Merge vs Your Own Merge Call | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; verified live GraphQL restriction |
 | 07 | The GitHub API In Depth & GitHub Apps | ✅ Complete | 2026-08-21 | Added mid-build per explicit request; full 20-section content, lab, notebook pair |
 | 08 | Actions Anatomy | 📋 Planned | — | Stub only |
@@ -41,6 +41,17 @@ Chapters 01, 06, 07, and 16 written to full depth with matching lab scripts and
 notebook pairs; the remaining 19 chapters are header-block stubs with correct,
 final metadata (so `CLAUDE.md`'s mapping table and `README.md`'s curriculum tables
 are already accurate for the whole 23-chapter arc).
+
+**2026-08-21 — Curriculum backfill Batch 1 (Phase 1, Chapters 02–05).** Wrote full
+20-section content, a lab script, and a reference + practice notebook pair for
+Chapters 02, 03, 04, and 05, closing Phase 1 entirely (Chapters 01–06 are now all
+complete). Chapters 03 and 05 were originally scoped as "notebook-only" (practice
+notebook with no reference/lab); per the user's explicit decision they were promoted
+to full lab + reference-notebook chapters like every other chapter, so no practice
+notebook in the curriculum lacks an answer key. Chapter 05's lab
+(`lab_05_branch_protection.py`) directly demonstrates the real `GITHUB_TOKEN` 403
+discovery already logged below (Live-Repo Verification Log #1) rather than
+re-describing it in the abstract. Five new fixtures added to support these labs.
 
 **2026-08-21 — Chapter 07 inserted mid-build.** User requested a dedicated chapter
 on `gh api` depth and GitHub Apps partway through the build, correctly identifying

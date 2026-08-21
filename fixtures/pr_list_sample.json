@@ -1,0 +1,16 @@
+{
+  "prs": [
+    {"number": 101, "title": "fix: correct typo in sandbox README", "state": "OPEN"},
+    {"number": 102, "title": "feat: add greeting helper to sandbox app", "state": "OPEN"},
+    {"number": 103, "title": "ci: tweak gate3 threshold comment", "state": "OPEN"},
+    {"number": 104, "title": "refactor: reorganize sandbox module layout", "state": "OPEN"},
+    {"number": 105, "title": "migrate: restructure sandbox data layer", "state": "OPEN"},
+    {"number": 106, "title": "docs: expand chapter 12 examples", "state": "MERGED"},
+    {"number": 107, "title": "fix: gate2 flaky retry", "state": "MERGED"},
+    {"number": 108, "title": "chore: bump pytest pin", "state": "CLOSED"},
+    {"number": 109, "title": "feat: add lab 09 event matrix", "state": "OPEN"},
+    {"number": 110, "title": "fix: notebook pairing test edge case", "state": "MERGED"},
+    {"number": 111, "title": "docs: chapter 17 airlock wiring", "state": "OPEN"},
+    {"number": 112, "title": "chore: rotate PRA_BOT_TOKEN reminder", "state": "OPEN"}
+  ]
+}

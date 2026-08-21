@@ -34,9 +34,9 @@ file before (even a trivial one), has a GitHub account with a repo you can exper
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
 | 01  | Auto-Merge & The Airlock Principle                                       | 📓 practice_01 · 🐍 lab_01 | Core  | ~40 min |
 | 02  | Refs, Branches & What a PR Really Is                                     | 📓 practice_02 · 🐍 lab_02 | Core  | ~45 min |
-| 03  | Merge Commit vs Squash vs Rebase                                         | 📓 practice_03              | Core  | ~35 min |
+| 03  | Merge Commit vs Squash vs Rebase                                         | 📓 practice_03 · 🐍 lab_03 | Core  | ~35 min |
 | 04  | Reading PR Data: `gh pr view`, `gh api`, Pagination                      | 📓 practice_04 · 🐍 lab_04 | Core  | ~45 min |
-| 05  | Branch Protection & Rulesets                                             | 📓 practice_05              | Core  | ~45 min |
+| 05  | Branch Protection & Rulesets                                             | 📓 practice_05 · 🐍 lab_05 | Core  | ~45 min |
 | 06  | **Native Auto-Merge vs Your Own Merge Call**                             | 📓 practice_06 · 🐍 lab_06 | Core  | ~50 min |
 
 ### Phase 2 — The GitHub API & Actions Mechanics _(Chapters 7–13)_
