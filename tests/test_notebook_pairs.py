@@ -22,7 +22,9 @@ NOTEBOOKS_DIR = ROOT / "notebooks"
 #: that exist. Extend this as chapters are backfilled.
 PAIRED_NOTEBOOKS: dict[str, str] = {
     "01": "lab_01_airlock_principle",
-    "15": "lab_15_risk_scoring",
+    "06": "lab_06_merge_modes",
+    "07": "lab_07_api_and_apps",
+    "16": "lab_16_risk_scoring",
 }
 
 

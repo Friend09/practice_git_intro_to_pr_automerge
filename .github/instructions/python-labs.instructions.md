@@ -14,11 +14,28 @@ Every lab script must follow this order:
 
 ```
 1. Module docstring (purpose, chapter link, gh commands used, usage example)
-2. Imports (stdlib → third-party → pr_automerge)
+2. Imports: stdlib → sys.path insertion (see below) → pr_automerge
 3. Constants / Configuration (PRA_ env vars, thresholds, paths)
 4. Helper Functions / Classes (each with docstring + type hints)
 5. Main experiment / demo logic
 6. if __name__ == "__main__": entrypoint with argparse or direct call
+```
+
+## sys.path Insertion (Required)
+
+Labs run standalone (`python labs/lab_XX_*.py`, and via `make lab-XX`), not as an installed
+package. Because the `pr_automerge` package lives at the repo root, not under `labs/`, every lab
+that imports from it must insert the repo root into `sys.path` before that import — verified
+necessary: omitting this raises `ModuleNotFoundError: No module named 'pr_automerge'` the moment
+the script is run directly rather than via pytest (which inserts the root itself).
+
+```python
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from pr_automerge.models import GateResult  # noqa: E402
 ```
 
 ## Environment Variables
