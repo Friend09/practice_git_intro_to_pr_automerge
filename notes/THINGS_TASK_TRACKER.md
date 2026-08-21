@@ -51,15 +51,18 @@ None currently.
 
 ### Phase 3 — Building the Three Gates (Ch 14–17)
 
-- [ ] Chapter 14: Gate 1 — Repo Readiness (stub only — but the live workflow
-      `gate1-repo-health.yml` is built, tested live, and enforces readiness)
-- [ ] Chapter 15: Gate 2 — PR Health (stub only — live workflow
-      `gate2-pr-health.yml` built and verified against a real PR)
+- [x] Chapter 14: Gate 1 — Repo Readiness
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Live workflow `gate1-repo-health.yml` built, tested live, and enforces readiness.
+- [x] Chapter 15: Gate 2 — PR Health
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    Live workflow `gate2-pr-health.yml` built and verified against a real PR.
 - [x] Chapter 16: Gate 3 — Risk Scoring
   - Full 20-section content, lab, reference + practice notebook pair — all complete.
     Live workflow `gate3-score.yml` verified against a real PR.
-- [ ] Chapter 17: Wiring the Airlock (stub only — but `automerge.yml` is built,
-      redesigned once after a live bug, and verified live)
+- [x] Chapter 17: Wiring the Airlock
+  - Full 20-section content, lab, reference + practice notebook pair — all complete.
+    `automerge.yml` built, redesigned once after a live bug, and verified live.
 
 ### Phase 4 — Hardening, Scale & Operations (Ch 18–23)
 
@@ -74,11 +77,11 @@ None currently.
 
 ## 📋 NOTEBOOK TODO LIST
 
-Reference + practice pairs complete for Ch 01–13, 16 (Phase 1 and Phase 2 fully
-done). Per the 2026-08-21 scope decision, every chapter (including the ⭐-optional
-ones and the originally "notebook-only" 03/05/08/11/18/20/21/22) gets a full
-reference + practice pair — remaining chapters pending in curriculum order (Batch 3:
-14/15/17, Batch 4: 18–23).
+Reference + practice pairs complete for Ch 01–17 (Phase 1, Phase 2, and Phase 3 all
+fully done). Per the 2026-08-21 scope decision, every chapter (including the
+⭐-optional ones and the originally "notebook-only" 03/05/08/11/18/20/21/22) gets a
+full reference + practice pair — remaining chapters pending in curriculum order
+(Batch 4: 18–23).
 
 ---
 
@@ -88,11 +91,11 @@ Complete: `lab_01_airlock_principle.py`, `lab_02_pr_refs.py`,
 `lab_03_merge_strategies.py`, `lab_04_pr_data.py`, `lab_05_branch_protection.py`,
 `lab_06_merge_modes.py`, `lab_07_api_and_apps.py`, `lab_08_actions_anatomy.py`,
 `lab_09_event_matrix.py`, `lab_10_job_outputs.py`, `lab_11_tokens_and_permissions.py`,
-`lab_12_check_runs.py`, `lab_13_why_no_trigger.py`, `lab_16_risk_scoring.py`.
+`lab_12_check_runs.py`, `lab_13_why_no_trigger.py`, `lab_14_repo_health.py`,
+`lab_15_pr_health.py`, `lab_16_risk_scoring.py`, `lab_17_airlock.py`.
 
 Pending, per the `CLAUDE.md` Chapter-Notebook-Lab Mapping table plus the promoted
-chapters from the 2026-08-21 scope decision: `lab_14_repo_health.py`,
-`lab_15_pr_health.py`, `lab_17_airlock.py`, `lab_18_security.py`,
+chapters from the 2026-08-21 scope decision: `lab_18_security.py`,
 `lab_19_calibrate.py`, `lab_20_merge_queues.py`, `lab_21_reusable_workflows.py`,
 `lab_22_buy_vs_build.py`, `lab_23_capstone.py`.
 
@@ -141,6 +144,8 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
 - [x] `fixtures/branch_light_status.json`, `branch_protection_full.json` — Chapter 05
       (the two branch-protection read shapes)
 - [x] `fixtures/check_run_response.json` — Chapter 12 (a published check-run response)
+- [x] `fixtures/repo_settings.json` — Chapter 14 (repo-level `allow_auto_merge` read)
+- [x] `fixtures/check_runs_for_sha.json` — Chapter 15 (per-SHA check-run listing)
 - [x] `resources/gha_event_reference.md`, `resources/token_permission_matrix.md` —
       cheatsheets referenced in `CLAUDE.md`'s repo structure (already written; this line
       was stale — corrected 2026-08-21 batch 1)
@@ -186,3 +191,22 @@ what `automerge.yml`'s live workflow logic does today only inside YAML.
   extended; `CLAUDE.md` and `README.md` updated. All 117 tests pass (2 skipped,
   pre-existing and unrelated); all six new labs run cleanly offline; all six
   reference notebooks executed via `nbconvert` and stripped for commit.
+
+- **2026-08-21 — Curriculum backfill Batch 3 (Phase 3, Ch 14/15/17).** Full
+  20-section content, lab script, and reference + practice notebook pair written for
+  Chapters 14 (Gate 1 — Repo Readiness), 15 (Gate 2 — PR Health), and 17 (Wiring the
+  Airlock) — closing Phase 3 entirely (Ch 01–17 all complete; only 18–23 remain).
+  Chapter 16 was already complete from the initial build. Read all five live
+  workflow files and `workflows.instructions.md` before writing, per the plan;
+  chapters 14/15/17 describe those exact files, including the four real discoveries
+  in the Live-Repo Verification Log. `lab_14_repo_health.py` and
+  `lab_15_pr_health.py` are thin CLI wrappers over `pr_automerge.gates`, as the
+  tracker anticipated; `lab_17_airlock.py` composes `pr_automerge.gates` +
+  `pr_automerge.scoring` into a single `decide(pr) -> Decision`, demonstrating in
+  Python what the five real workflows achieve without any direct coordination, via
+  required status checks and native auto-merge alone. Two new fixtures added
+  (`repo_settings.json`, `check_runs_for_sha.json`). `FULL_CHAPTERS` and
+  `PAIRED_NOTEBOOKS` extended. All 129 tests pass (2 skipped, pre-existing and
+  unrelated); all three new labs run cleanly offline; all three reference notebooks
+  executed via `nbconvert` and stripped for commit. No `.github/workflows/*.yml`
+  files were edited — read-only per the plan's scope.

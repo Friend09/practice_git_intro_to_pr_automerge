@@ -20,10 +20,10 @@ forward backlog.
 | 11 | Tokens & Permissions | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; promoted from notebook-only |
 | 12 | Status Checks, Check Runs & Commit Statuses | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
 | 13 | Debugging Workflows That Didn't Fire | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair |
-| 14 | Gate 1 — Repo Readiness | 📋 Planned | — | Stub, but live workflow built + verified |
-| 15 | Gate 2 — PR Health | 📋 Planned | — | Stub, but live workflow built + verified |
+| 14 | Gate 1 — Repo Readiness | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; live workflow built + verified |
+| 15 | Gate 2 — PR Health | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; live workflow built + verified |
 | 16 | Gate 3 — Risk Scoring | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; live workflow verified |
-| 17 | Wiring the Airlock | 📋 Planned | — | Stub, but `automerge.yml` built + redesigned once + verified |
+| 17 | Wiring the Airlock | ✅ Complete | 2026-08-21 | Full 20-section content, lab, notebook pair; `automerge.yml` built + redesigned once + verified |
 | 18 | Security | 📋 Planned | — | Stub only |
 | 19 | Calibrating the Threshold | 📋 Planned | — | Stub only |
 | 20 | Merge Queues (⭐) | 📋 Planned | — | Stub only |
@@ -61,6 +61,19 @@ reason as Batch 1's 03/05. Chapter 09's lab reproduces the real `workflow_run`
 two-hop `head_sha` collapse (the fourth discovery in the Live-Repo Verification Log
 below) as a runnable simulation rather than only describing it in prose; Chapter
 11's lab reproduces the real `-f`/`-F` encoding bug the same way.
+
+**2026-08-21 — Curriculum backfill Batch 3 (Phase 3, Chapters 14, 15, 17).** Wrote
+full 20-section content, a lab script, and a reference + practice notebook pair for
+Chapters 14, 15, and 17, closing Phase 3 entirely (Chapters 01–17 are now all
+complete). All five live workflow files were read in full before writing, since
+these three chapters describe those exact files and the real bugs found building
+them. `lab_14_repo_health.py` and `lab_15_pr_health.py` are thin wrappers around
+`pr_automerge.gates.evaluate_gate1`/`evaluate_gate2`, matching the design the
+tracker specified when those functions were first built. `lab_17_airlock.py`
+composes all three gates into one `decide() -> Decision` call, made explicit in
+Python for teaching purposes even though none of the five real workflows need this
+composition — they achieve it entirely through required status checks and native
+auto-merge, with zero direct coordination between the three gate workflows.
 
 **2026-08-21 — Chapter 07 inserted mid-build.** User requested a dedicated chapter
 on `gh api` depth and GitHub Apps partway through the build, correctly identifying

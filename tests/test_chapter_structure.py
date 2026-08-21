@@ -39,7 +39,10 @@ REQUIRED_SECTIONS_FULL_CHAPTER = [
 
 #: Chapters authored at full 20-section depth (see build order step 7). Others are
 #: header-only stubs, checked less strictly.
-FULL_CHAPTERS = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "16"}
+FULL_CHAPTERS = {
+    "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
+    "11", "12", "13", "14", "15", "16", "17",
+}
 
 
 def _chapter_files() -> list[Path]:
