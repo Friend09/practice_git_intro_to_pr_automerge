@@ -23,10 +23,24 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.event == 'pull_request'
     steps:
-      - name: Checkout main (for readiness.json)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: main
+          fetch-depth: 1
+
+      - name: Read readiness.json from gate-status branch
+        id: readiness
+        # gate1-repo-health.yml publishes readiness.json to this dedicated,
+        # unprotected branch rather than to main -- main's branch protection
+        # rejects direct bot pushes (see that workflow's comment). The branch may
+        # not exist yet if Gate 1 has never run -- fail closed in that case.
+        run: |
+          if git fetch origin gate-status 2>/dev/null && git show origin/gate-status:readiness.json > readiness.json 2>/dev/null; then
+            echo "found readiness.json on gate-status"
+          else
+            echo '{"ready": false}' > readiness.json
+            echo "gate-status branch or readiness.json not found -- treating Gate 1 as NOT ready"
+          fi
 
       - name: Evaluate all three gates and queue merge if green
         env:
