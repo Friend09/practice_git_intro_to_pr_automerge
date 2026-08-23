@@ -146,7 +146,10 @@ know" is treated identically to "no."**
 ### A real example: the prior-art bug
 
 This isn't hypothetical. An earlier prototype scoring engine (referenced throughout this
-curriculum) computes a readiness score like this:
+curriculum) computes a readiness score, and merges when that score is **≥ 0.9**.
+
+In plain English: each rule (tests, lint, review…) carries a weight; the score is the fraction of
+total applicable weight that passed.
 
 ```
 score = (sum of weights for rules that PASSED) / (sum of weights for rules that were APPLICABLE)
@@ -159,6 +162,40 @@ vulnerabilities"), a `skip` doesn't just fail to lower the score — it silently
 from the equation. A PR with a security scanner that crashed can score *higher* than one where the
 scanner ran and found nothing. The prototype's own test suite documents this as intended behavior:
 a missing blocker signal does not block approval.
+
+Watch it happen with numbers. First, the healthy case: the tests signal is *present*, and it
+failed.
+
+| Rule   | Weight | Result | Counts in numerator? | Counts in denominator? |
+| ------ | -----: | ------ | -------------------- | ---------------------- |
+| tests (blocker) | 0.50 | ❌ failed | no | yes |
+| lint   | 0.25 | ✅ passed | yes | yes |
+| review | 0.25 | ✅ passed | yes | yes |
+
+```
+score = (0.25 + 0.25) / (0.50 + 0.25 + 0.25) = 0.50 / 1.00 = 0.50   →  0.50 < 0.9  →  NO MERGE
+```
+
+Now the *same PR*, except the tests signal never arrives — the runner crashed before reporting.
+The rule is marked `skip` and vanishes from both sides of the division:
+
+| Rule   | Weight | Result | Counts in numerator? | Counts in denominator? |
+| ------ | -----: | ------ | -------------------- | ---------------------- |
+| tests (blocker) | 0.50 | ⏭ skip (no signal) | no | **no** |
+| lint   | 0.25 | ✅ passed | yes | yes |
+| review | 0.25 | ✅ passed | yes | yes |
+
+```
+score = (0.25 + 0.25) / (0.25 + 0.25) = 0.50 / 0.50 = 1.00   →  1.00 ≥ 0.9  →  MERGES
+```
+
+**What to notice:**
+
+- The PR got strictly *riskier* between the two tables — in the first its tests ran and failed; in
+  the second they never ran at all — yet its score went **up**, from 0.50 to a perfect 1.00.
+- The only thing that changed is a sensor going quiet. No code changed, no check passed.
+- The heavier the missing blocker's weight, the *bigger* the score inflation — losing the 0.50
+  denominator share is exactly what doubles the ratio. That is fail-open, quantified.
 
 That's a door that opens when the sensor dies. Chapter 14 rebuilds the same kind of check the
 opposite way: no data on a required signal is an automatic **fail**, not a shrug.
@@ -277,12 +314,14 @@ A 900-line PR that touches `.github/workflows/` and rewrites the data layer. Eve
 this is exactly the shape of change a risk-based Gate 3 exists to catch: large, and touching a
 critical path. In this curriculum's scoring model (Chapter 16), it hits a hard-coded line-count
 ceiling and is blocked regardless of its computed score — no amount of green CI overrides "too
-big to auto-merge."
+big to auto-merge." Chapter 16 §8 computes this exact PR (900 lines, 30 files, 2 critical-path
+hits): risk **510.0** — but it's the 500-line hard ceiling, not the score, that blocks it first.
 
 ## 13. Case Study: A PR That Should Always Auto-Merge
 
 A three-line typo fix in a single file. Green CI, no critical paths touched, a risk score near
-zero. This is the case the whole system exists to *not* burden a human with — every chapter's
+zero — Chapter 16 §8 computes it exactly: 3 lines, 1 file, 0 critical paths → risk **5.9**, far
+under the 70-point threshold. This is the case the whole system exists to *not* burden a human with — every chapter's
 "hands-on" section produces PRs exactly like this one to prove the pipeline works before testing
 its edges.
 

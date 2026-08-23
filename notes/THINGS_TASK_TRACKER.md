@@ -6,6 +6,18 @@ Forward-looking backlog. See `IMPROVEMENTS_SUMMARY.md` for the dated completion 
 
 None currently.
 
+**Recently completed (2026-08-23): Depth retrofit — Worked Trace pattern across all 24
+chapters.** Gap analysis against *Learning Git* (Skoulikari) and *Learning GitHub Actions*
+(Laster) → six-device Worked Trace pattern codified in
+`.github/instructions/chapter-content.instructions.md` → all 5 batches executed (Batch 0
+spec + rate-limit fix; Batch 1 Ch 09–13; Batch 2 Ch 14–18; Batch 3 Ch 19–23; Batch 4
+Ch 00–08 + the 3,000-file-cap correction). ~2,200 lines added across 31 files; full ledger
+in `IMPROVEMENTS_SUMMARY.md`. Deferred follow-ups from the initiative:
+
+- [ ] `##[debug]` trace markdown cell in the lab_13/practice_13 notebook pair (synchronized
+      two-file edit)
+- [ ] lab_09 has no PRA_MODE fixture/live toggle (pre-existing gap, noted during the audit)
+
 ---
 
 ## 📋 CHAPTER TODO LIST

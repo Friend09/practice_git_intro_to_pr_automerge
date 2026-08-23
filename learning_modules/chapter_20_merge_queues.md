@@ -1,6 +1,6 @@
 # Chapter 20: Merge Queues
 
-**Reading Time:** ~40 minutes
+**Reading Time:** ~45 minutes
 **Prerequisites:** Chapter 17 (Wiring the Airlock)
 **Practice Notebook:** `notebooks/practice_20.ipynb`
 **Reference Notebook:** `notebooks/lab_20_merge_queues.ipynb`
@@ -115,6 +115,51 @@ sees no textual conflict — both apply cleanly. But if the two flags interact (
 a dependency A's new flag assumed still existed), the combined file is broken in a way neither PR's
 own isolated CI run — tested against `main` *before* the other PR merged — could ever have caught.
 
+### Spot the Diff: Two Green PRs, One Broken File
+
+**State before** — `config/feature_flags.yml` at `main` (`0f1e2d3c4b5a…`), the commit both PRs
+branched from (trimmed excerpt):
+
+```yaml
+flags:
+  search_v2: true             # line 11
+# … lines 13–38 unchanged …
+  legacy_payment_path: true   # line 40 — fallback route, currently unreferenced
+```
+
+**PR #201 (A)** adds one flag at line 12 — CI against `main + A`: **green**:
+
+```diff
+   search_v2: true
++  new_checkout: true          # falls back to legacy_payment_path on payment error
+```
+
+**PR #202 (B)** removes one "unused" flag at line 40 — CI against `main + B`: **green**:
+
+```diff
+-  legacy_payment_path: true   # line 40 — fallback route, currently unreferenced
+```
+
+**State after both merge** — what `main` actually contains:
+
+```yaml
+flags:
+  search_v2: true
+  new_checkout: true          # falls back to legacy_payment_path on payment error
+# … lines 13–38 unchanged …
+                              # legacy_payment_path is gone — the fallback points at nothing
+```
+
+A's run was green because `legacy_payment_path` still existed in `main + A`; B's run was green
+because in `main + B` no flag referenced the one being removed. Only the combination breaks.
+
+**What to notice:**
+
+- Line 12 and line 40 never overlap — Git merges both diffs cleanly, with **zero** textual conflict.
+- Each PR's CI verdict was honest *for the tree it tested* — the other PR's edit simply wasn't in it.
+- The bug exists in no diff and no tested tree; it exists only in the pair — which is why no
+  single-PR gate (Gate 2, Gate 3, required checks) can ever be positioned to catch it.
+
 ## 3. Why Each PR's Own CI Run Can't Catch This
 
 CI for PR A runs against `main` + PR A's changes. CI for PR B runs against `main` + PR B's changes.
@@ -134,6 +179,42 @@ main ─┐
        ├─▶ speculative: main + A          → A's queue CI runs here
        └─▶ speculative: main + A + B      → B's queue CI runs here (sees A's changes too)
 ```
+
+### The Speculative Refs, Literally
+
+These speculative bases are not an abstraction — they are real, temporary, read-only branches
+GitHub pushes to your repo. The documented contract is the prefix: every queue branch begins with
+`gh-readonly-queue/{base_branch}` (this is what third-party CI is told to match on). In practice
+the full branch name also embeds the PR number and a SHA — observed convention, not a documented
+API surface. For Section 2's two PRs (#201 and #202, base `main` at `0f1e2d3c4b5a…`), the queue
+creates:
+
+```
+refs/heads/gh-readonly-queue/main/pr-201-0f1e2d3c4b5a…   ← contains: main + A
+refs/heads/gh-readonly-queue/main/pr-202-<sha-of-A's-speculative-merge>… ← contains: main + A + B
+```
+
+`config/feature_flags.yml` on each ref:
+
+```
+pr-201 ref: search_v2 ✓  new_checkout ✓  legacy_payment_path ✓   → queue CI: green, A merges
+pr-202 ref: search_v2 ✓  new_checkout ✓  legacy_payment_path ✗   → queue CI: RED, B is held
+```
+
+The `pr-202` ref's content is byte-for-byte the broken combined file from Section 2 — but now it
+exists *before* the merge, as a testable tree. Workflows run against these refs via the
+`merge_group` event (`types: [checks_requested]`), which must be added as a trigger alongside
+`pull_request`, or the queue's required checks never fire (Chapter 13's silent-no-trigger failure
+mode, in queue form).
+
+**What to notice:**
+
+- B is tested against a base that already contains A — *before* A has actually merged. The queue
+  manufactures the future `main` and tests it early.
+- Section 2's "invisible" pairwise bug has become an ordinary red check on an ordinary ref —
+  nothing clever detects the semantic conflict; plain CI does, pointed at the right tree.
+- The gating check runs on the speculative merge commit, not the PR's own head SHA — the same
+  shift Section 10 returns to.
 
 ## 5. Serializing the Queue
 
@@ -284,6 +365,7 @@ YAML.
 ## 19. Additional Resources
 
 - **GitHub Docs, "Merging a pull request with a merge queue"** — https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue (fetched 2026-08)
+- **GitHub Docs, "Events that trigger workflows" § `merge_group`** — the `checks_requested` activity type and the requirement to add `merge_group:` as a trigger for queue-gating checks — https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows (fetched 2026-08)
 - **GitHub Changelog, "Merge queue is generally available"** — background on the feature's rollout and required-check interaction (fetched 2026-08)
 - **This repo's own** `.github/workflows/automerge.yml` — the design this chapter contrasts against
 

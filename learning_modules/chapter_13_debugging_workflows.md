@@ -1,6 +1,6 @@
 # Chapter 13: Debugging Workflows That Didn't Fire
 
-**Reading Time:** ~40 minutes
+**Reading Time:** ~45 minutes
 **Prerequisites:** Chapter 09 (The Event Model), Chapter 11 (Tokens & Permissions)
 **Practice Notebook:** `notebooks/practice_13.ipynb`
 **Reference Notebook:** `notebooks/lab_13_why_no_trigger.ipynb`
@@ -81,11 +81,13 @@ is itself the whole problem.
   - [7. Check 4: Do `paths:`/`branches:` Filters Match?](#7-check-4-do-paths-branches-filters-match)
   - [8. Check 5: Is the Workflow Disabled?](#8-check-5-is-the-workflow-disabled)
   - [9. ⚠️ ADVANCED: Replaying Filter Logic Locally](#9-️-advanced-replaying-filter-logic-locally)
+    - [Debug Logging: When a Run Exists but Won't Explain Itself](#debug-logging-when-a-run-exists-but-wont-explain-itself)
   - [10. ⚠️ ADVANCED: Fork PR Restrictions](#10-️-advanced-fork-pr-restrictions)
   - [11. ⚠️ ADVANCED: Workflow Disabled Due to Inactivity](#11-️-advanced-workflow-disabled-due-to-inactivity)
   - [12. Case Study: A Schedule That Never Fired](#12-case-study-a-schedule-that-never-fired)
   - [13. Case Study: This Curriculum's Own Path-Filter Design](#13-case-study-this-curriculums-own-path-filter-design)
   - [14. Practical Tips: The Checklist, In Order](#14-practical-tips-the-checklist-in-order)
+    - [Two Observability Shortcuts: Status Badges and Version-to-Run Mapping](#two-observability-shortcuts-status-badges-and-version-to-run-mapping)
   - [15. Your First Project: Deliberately Break Each Check](#15-your-first-project-deliberately-break-each-check)
   - [16. Common Pitfalls \& Misconceptions](#16-common-pitfalls--misconceptions)
   - [17. Key Takeaways](#17-key-takeaways)
@@ -140,6 +142,22 @@ the **entire workflow file** — not just the malformed section. `gh workflow li
 tab's "..." menu on the workflow will show a parse-error indicator if this is the cause; `yamllint`
 or a local `yaml.safe_load()` catches most syntax errors before you even push.
 
+**Shown symptom.** Before: `gate2-pr-health.yml` is pushed to `main` with `jbos:` where `jobs:`
+should be. The event fires → no run appears; the Actions tab instead shows this annotation on
+the workflow:
+
+```
+Invalid workflow file: .github/workflows/gate2-pr-health.yml#L14
+The workflow is not valid. .github/workflows/gate2-pr-health.yml
+(Line: 14, Col: 1): Unexpected value 'jbos'
+```
+
+**What to notice:**
+
+- The annotation names the exact file, line, and column — but it lives on the *workflow*, not on
+  any run, because registration failed before any run could exist.
+- One bad key failed the **whole file**: every trigger in it is dead until the parse error is fixed.
+
 ## 5. Check 2: Is It On the Default Branch?
 
 `schedule` triggers (Chapter 09 §5) are read **only** from the default branch's copy of the
@@ -148,12 +166,44 @@ branch is merged. This single fact explains an entire category of "I added a sch
 fires" reports: the schedule genuinely works, it's just reading a version of the file that doesn't
 have your change yet.
 
+**Shown symptom.** Before: the cron edit to `gate1-repo-health.yml` sits on a feature branch,
+not yet merged to `main` (Section 12's case study). Days later:
+
+```
+$ gh run list --workflow=gate1-repo-health.yml --event=schedule
+(no output — exit status 0)
+```
+
+**What to notice:**
+
+- The command *succeeds* and prints nothing — zero scheduled runs is an empty list, not an
+  error. Silence is the entire symptom.
+- `--event=schedule` matters: manual `workflow_dispatch` test runs *can* run from any branch,
+  and without the filter they mask the dead cron.
+
 ## 6. Check 3: Does the Event Type Match?
 
 The most basic check, and the most commonly overlooked once you're deep into filter debugging:
 confirm the event GitHub actually fired (visible in the repo's Events feed, or inferred from what
 action was taken) is even listed under `on:` at all. A `push`-only workflow will never fire for a
 PR event, however correctly everything else is configured.
+
+**Shown symptom.** Before: a gate workflow declares `on: push` only. Opening PR #101
+(`fix/readme-typo` → `main`) fires a `pull_request` event:
+
+```
+Event fired:            pull_request (action: opened)
+Workflow's on: block:   on:
+                          push:
+                            paths: ['sandbox/**']
+Result:                 no run created — event type not declared
+```
+
+**What to notice:**
+
+- The `paths:` filter never even got consulted — event-type matching happens first, and
+  `pull_request` is simply absent from `on:`.
+- Opening a PR does not fire `push`; the push happened earlier, to the *head branch*.
 
 ## 7. Check 4: Do `paths:`/`branches:` Filters Match?
 
@@ -164,11 +214,43 @@ so curriculum-only PRs never wake the airlock. This is also the single most comm
 not a bug. `branches:` filters work identically — check the PR's actual base branch against
 whatever the filter specifies.
 
+**Shown symptom — spot the diff.** Two PRs against the same filter, `paths: ['sandbox/**']`:
+
+```
+PR #101  changed files: sandbox/README.md          → matches sandbox/**  → gates RUN
+PR #102  changed files: learning_modules/          → no glob matches     → NO run,
+                          chapter_13_debugging_workflows.md                 no trace
+```
+
+**What to notice:**
+
+- Same workflow, same event type, same base branch — the *only* delta is the changed-file list.
+- The no-match case leaves nothing in the Actions tab. Compare the file list against the glob
+  yourself (Section 9's lab replays this with `fnmatch`); GitHub won't show you the non-match.
+
 ## 8. Check 5: Is the Workflow Disabled?
 
 A workflow can be manually disabled from the Actions tab's "..." menu — a real, if easy-to-forget,
 possibility. GitHub also auto-disables a scheduled workflow after 60 days of repository
 inactivity (Section 11) — a fact worth checking before assuming a misconfiguration is the cause.
+
+**Shown symptom.** Before: someone disabled Gate 2 from the "..." menu during an incident and
+forgot. `gh workflow list --all` (without `--all`, disabled workflows are hidden entirely):
+
+```
+$ gh workflow list --all
+Automerge — Queue on Open/Update  active             339521379
+CI                                active             339521380
+Gate 1 — Repo Readiness           active             339521382
+Gate 2 — PR Health                disabled_manually  339521383
+Gate 3 — Risk Score               active             339521384
+```
+
+**What to notice:**
+
+- The state column distinguishes `disabled_manually` from `disabled_inactivity` (Section 11's
+  60-day case) — the two have different fixes and different people to ask.
+- Re-enable with `gh workflow enable 339521383` (the third column is the workflow ID).
 
 ## 9. ⚠️ ADVANCED: Replaying Filter Logic Locally
 
@@ -180,6 +262,38 @@ Before pushing a change to test whether a `paths:` filter would match, you can r
 glob-matching logic locally against a known changed-file list — exactly what this chapter's lab
 script does with `fnmatch`. This turns "push, wait, check the Actions tab, repeat" into an instant
 local loop, useful for anything beyond the most obvious filter mismatches.
+
+### Debug Logging: When a Run Exists but Won't Explain Itself
+
+Checks 1–5 get a run to *exist*; sometimes the run then behaves strangely and the default log is
+too terse. Setting a repository secret **or** variable `ACTIONS_STEP_DEBUG=true` (the secret wins
+if both exist) makes the engine narrate every step, including its expression evaluation — the
+exact trace for "why did this step run/skip?":
+
+```
+##[debug]Evaluating condition for step: 'Evaluate Gate 2 and publish a check run'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: Evaluate Gate 2 and publish a check run
+```
+
+`ACTIONS_RUNNER_DEBUG=true` (same secret-or-variable mechanism) additionally uploads runner
+diagnostic logs — visible only via "Download log archive", never in the browser. The real
+archive layout from this repo's Gate 1 run `32503470962`:
+
+```
+gate1_logs.zip
+├── 0_check-readiness.txt        ← full job log; one ##[group]…##[endgroup] per step
+├── check-readiness/
+│   └── system.txt               ← runner assignment ("Job defined at: …@refs/heads/main")
+└── runner-diagnostic-logs/      ← present only with ACTIONS_RUNNER_DEBUG=true
+    └── (runner + worker process logs per job)
+```
+
+**What to notice:** the `##[debug]Evaluating:` lines are the engine's own reasoning, verbatim —
+when an `if:` skips a step you expected to run, this trace shows the exact expression and result.
 
 ## 10. ⚠️ ADVANCED: Fork PR Restrictions
 
@@ -237,6 +351,34 @@ Workflow X should have run but didn't -- work through in order, stop at the firs
 [6] Is the triggering PR from a fork? (Section 10)
 ```
 
+### Two Observability Shortcuts: Status Badges and Version-to-Run Mapping
+
+**A stale badge is a visible "didn't fire".** Every workflow exposes a live status badge at:
+
+```
+https://github.com/OWNER/REPO/actions/workflows/gate2-pr-health.yml/badge.svg
+```
+
+Append `?branch=main` or `?event=push` to pin it to one branch or trigger. Put the gate badges
+in the README and a silently-dead workflow stops being invisible — a badge frozen on an old
+result (or showing "no status") is this whole chapter's failure category, surfaced passively.
+
+**Which YAML produced this run?** Every run records the commit it ran for (`head_sha`) and the
+workflow file's repo path — so a run always maps back to the exact version of the YAML that
+produced it. Real output for Section 9's Gate 1 run, via `GET /repos/{owner}/{repo}/actions/runs/{run_id}`:
+
+```
+$ gh api repos/OWNER/REPO/actions/runs/32503470962 --jq '{head_sha: .head_sha, path: .path}'
+{"head_sha":"61391762a36663fc898854202f1202b57ee3f7b7",
+ "path":".github/workflows/gate1-repo-health.yml"}
+$ git show 61391762:.github/workflows/gate1-repo-health.yml   # the YAML that ran
+```
+
+The archive's `system.txt` (Section 9) records the same fact as a ref (`Job defined at:
+…/gate1-repo-health.yml@refs/heads/main`); reusable workflows get pinned SHAs in
+`referencedWorkflows`. Debugging "this used to fire"? Diff the YAML between two runs' `headSha`s
+first.
+
 ## 15. Your First Project: Deliberately Break Each Check
 
 On a disposable test repo, break each of Section 3's five checks one at a time (bad YAML, a
@@ -291,6 +433,9 @@ sandbox: is the repository even eligible for auto-merge at all?
 - **GitHub Docs, "Using workflow run logs"** — https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/using-workflow-run-logs (fetched 2026-08)
 - **GitHub Docs, "Disabling and enabling a workflow"** — https://docs.github.com/en/actions/using-workflows/disabling-and-enabling-a-workflow (fetched 2026-08) — see the 60-day auto-disable note
 - **GitHub Docs, "Approving workflow runs from public forks"** — https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/approving-workflow-runs-from-public-forks (fetched 2026-08)
+- **GitHub Docs, "Enabling debug logging"** — https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/troubleshooting-workflows/enabling-debug-logging (fetched 2026-08) — `ACTIONS_STEP_DEBUG` / `ACTIONS_RUNNER_DEBUG`, secret or variable, secret takes precedence; runner logs land in the archive's `runner-diagnostic-logs` folder
+- **GitHub Docs, "Adding a workflow status badge"** — https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/monitoring-workflows/adding-a-workflow-status-badge (fetched 2026-08) — `badge.svg` URL pattern with `?branch=` / `?event=` parameters
+- **GitHub REST API, "Workflow runs"** — https://docs.github.com/en/rest/actions/workflow-runs (fetched 2026-08) — run object's `head_sha`, `path`, and `referenced_workflows[].sha` fields (the version-to-run mapping in Section 14)
 
 ## 20. Appendix A — Code Index
 

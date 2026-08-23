@@ -1,6 +1,6 @@
 # Chapter 03: Merge Commit vs Squash vs Rebase
 
-**Reading Time:** ~35 minutes
+**Reading Time:** ~40 minutes
 **Prerequisites:** Chapter 02 (Refs & PRs)
 **Practice Notebook:** `notebooks/practice_03.ipynb`
 **Reference Notebook:** `notebooks/lab_03_merge_strategies.ipynb`
@@ -137,6 +137,17 @@ feature:        C-----D
 `main` now contains `B`, `C`, `D`, and the new merge commit `M` — four commits added to its
 history for what may have been a two-commit PR (three, counting `B` which was already there).
 
+### Even With No Divergence: PRs Merge Non-Fast-Forward by Default
+
+That `--no-ff` flag is not decoration. GitHub's docs state a PR "is merged using the `--no-ff`
+option" — so even when `main` has *not* moved (no `B`; a plain `git merge` would fast-forward),
+the Merge button still creates a merge commit `M` (sometimes called an **explicit merge**, since
+`M` permanently marks where the join happened). For Chapter 06's auto-merge this has a concrete
+consequence: the SHA that lands on `main` is `M` — a commit that did not exist until the moment
+of merging — **not** the PR's head SHA (`D`; fixture spine: PR #101 head `a1b2c3d4e5f6…`).
+Automation that waits for "the PR's head commit to appear on `main`" waits forever; read the
+merge result's own SHA from the API instead.
+
 ## 4. Squash
 
 "Squash and merge" performs `git merge --squash feature`, which stages the *combined diff* of `C`
@@ -167,6 +178,19 @@ main:     A---B---C'---D'
 `main` gained two commits — same count as the original PR — but they are **not** `C` and `D`;
 they're new commits (`C'`, `D'`) with the same diffs and messages but different parent commits and
 therefore different SHAs.
+
+### What "Replay" Actually Means, Step by Step
+
+Rebase is four mechanical steps, and the last one is why the primes appear:
+
+1. **Find the common ancestor** of `feature` and `main` — here, `A`.
+2. **Set aside the branch's own changes** — the diffs introduced by `C` and `D` are saved to a
+   temporary area.
+3. **Reset to the new base** — the branch is pointed at `main`'s tip, `B`.
+4. **Re-apply each saved set of changes in order, committing each as a *new* commit** — same
+   diff, same message, but a different parent (`C'` sits on `B`, where `C` sat on `A`), and a
+   commit's SHA hashes its parent — so `C'` and `D'` are genuinely new commits carrying old
+   changes, not moved copies of `C` and `D`.
 
 ## 6. Side-by-Side Comparison
 
@@ -228,7 +252,11 @@ commit's exact content including its old parent SHA, which no longer matches. Gi
 "Rebase and merge" re-signs the new commits as the GitHub web-flow identity (if commit signing is
 enabled repo-wide), but a contributor's personal signature on their original commits is gone from
 `main`'s copy. Teams that require signed commits from specific authors as an audit requirement
-should treat this as a hard reason to prefer merge-commit or squash instead.
+should treat this as a hard reason to prefer merge-commit or squash instead. The same SHA
+rewriting is behind the **Golden Rule of Rebasing**: never rebase commits that other people may
+have based work on — their work would then hang off commits that no longer exist in the rewritten
+history. (GitHub's server-side rebase-and-merge skirts the rule only because it rewrites the
+branch at merge time, when the PR is finished.)
 
 ## 11. ⚠️ ADVANCED: Reverting Each Strategy's Output
 
@@ -276,6 +304,81 @@ git log --oneline --graph --all
 
 A straight line of `*` with no `|\` or `|/` anywhere means the history is fully linear — the
 signature of squash or rebase, never merge-commit.
+
+### Anatomy of a Merge Conflict
+
+All three strategies can hit a conflict when both sides changed the same lines. Here is one for
+real, from a throwaway repo where `main` set `threshold: 80` and `feature` set `threshold: 60`
+on the same line of a `gates.yml` (outputs captured verbatim from git 2.x):
+
+```
+$ git merge feature
+Auto-merging gates.yml
+CONFLICT (content): Merge conflict in gates.yml
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+Git pauses the merge and writes **conflict markers** into the file — seven left angle brackets,
+seven equals signs, seven right angle brackets, each row naming its branch:
+
+```
+<<<<<<< HEAD
+threshold: 80
+=======
+threshold: 60
+>>>>>>> feature
+ceiling: 400
+```
+
+**What to notice:**
+
+- Above `=======` is the **target** branch's version (`HEAD`, i.e. `main`); below it, the
+  **source** branch's (`feature`).
+- `ceiling: 400` sits *outside* the markers — unconflicted lines were already merged; only the
+  disputed region is fenced.
+
+`git status` at this point names the escape hatch itself:
+
+```
+$ git status
+On branch main
+You have unmerged paths.
+  (fix conflicts and run "git commit")
+  (use "git merge --abort" to abort the merge)
+
+Unmerged paths:
+  (use "git add <file>..." to mark resolution)
+	both modified:   gates.yml
+```
+
+**What to notice:** `both modified` is the conflict signature, and `git merge --abort` — printed
+by Git itself — walks everything back to the pre-merge state at any point before the final commit.
+
+Resolving is two steps: edit the file to what you want to keep (here, back to `threshold: 70`)
+and delete the marker lines, then `git add` it. After the `add` comes the intermediate state most
+tutorials skip:
+
+```
+$ git add gates.yml
+$ git status
+On branch main
+All conflicts fixed but you are still merging.
+  (use "git commit" to conclude merge)
+
+Changes to be committed:
+	modified:   gates.yml
+```
+
+**What to notice:**
+
+- "still merging" — resolution is not completion: the resolved content is only *staged*. A plain
+  `git commit` now concludes the merge as merge commit `M`; until then the merge is still open
+  and `git merge --abort` still works.
+
+**Rebase contrast:** a three-way merge presents *all* conflicts at once — one resolve/`add`/
+`commit` cycle total. Rebase (Section 5) replays commits one at a time, so it pauses at each
+conflicting commit: resolve, `git add`, then `git rebase --continue` (or `git rebase --abort`),
+possibly once per commit that conflicts.
 
 ## 15. Your First Project: Run All Three, Diff the Results
 
@@ -331,6 +434,7 @@ every gate in Phase 3 is actually built on.
 - **Pro Git, "Rewriting History"** — https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History (foundational; not date-sensitive)
 - **GitHub Docs, "About merge methods on GitHub"** — https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-merge-methods-on-github (fetched 2026-08)
 - **GitHub Docs, "Configuring commit squashing for pull requests"** — https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-squashing-for-pull-requests (fetched 2026-08)
+- **GitHub Docs, "About pull request merges"** — https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges (fetched 2026-08) — source for §3's `--no-ff` default and §10's note that server-side rebase always creates new commit SHAs
 
 ## 20. Appendix A — Code Index
 

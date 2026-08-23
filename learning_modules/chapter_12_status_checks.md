@@ -160,6 +160,35 @@ Every gate workflow in this repo makes exactly this call (with richer `output.ti
 here must be the PR's actual head commit — Chapter 10 §12 already covered what goes wrong when a
 gate accidentally publishes against `github.sha` (the synthetic merge commit) instead.
 
+### What the API sends back
+
+Before the call, PR #101's head commit `a1b2c3d4e5f6…` has no check named `gate3-risk-score`.
+After it, GitHub returns the created check run — this is `fixtures/check_run_response.json`
+(open the file for the version the lab script replays offline):
+
+```json
+{
+  "id": 900123456,
+  "name": "gate3-risk-score",
+  "head_sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+  "status": "completed",
+  "conclusion": "success",
+  "output": {
+    "title": "risk=66.0 <= threshold=70",
+    "summary": "Gate 3 passed -- see the PR comment for the full worked example."
+  }
+}
+```
+
+**What to notice:**
+
+- The returned `id` (`900123456`) is the handle for updating this run later — the three-call
+  `queued → in_progress → completed` pattern in Section 8 PATCHes this exact id.
+- `status` and `conclusion` are two different fields, and both appear here only because the gates
+  publish `completed` in a single call (Section 4).
+- `name` is `gate3-risk-score` — literally one of the three strings in Chapter 05's
+  `required_status_checks.contexts` list. Section 7 picks up that thread.
+
 ## 6. Why This Repo Uses the Checks API Exclusively
 
 The Checks API's richer output (a Markdown summary, not just one short string) is what lets Gate 3
@@ -175,6 +204,32 @@ workflow file or job ID. That principle applies identically here — a check run
 (`"gate3-risk-score"`, in this repo's case) is exactly the string branch protection's
 `required_status_checks.contexts` list must contain. Nothing about *how* the check was published
 (Commit Status API or Checks API) changes this matching rule.
+
+Here is what branch protection actually sees when it lists the check runs for PR #101's head SHA —
+this is `fixtures/check_runs_for_sha.json` (the response of
+`GET /repos/{o}/{r}/commits/{sha}/check-runs`):
+
+```json
+{
+  "total_count": 1,
+  "check_runs": [
+    {
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+    }
+  ]
+}
+```
+
+**What to notice:**
+
+- `"name": "test"` satisfies Chapter 05's `required_status_checks[contexts][]=test` requirement by
+  **exact string comparison** — those two strings, one published here and one configured there, are
+  the entire link. There is no job ID, workflow filename, or other structural reference.
+- Rename the publishing job (so this field becomes, say, `"test-suite"`) and nothing errors — the
+  requirement for `test` is simply never satisfied again, and the PR waits forever (Section 11).
 
 ## 8. ⚠️ ADVANCED: In-Progress Check Runs
 

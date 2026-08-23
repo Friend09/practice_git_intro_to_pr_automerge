@@ -1,6 +1,6 @@
 # Chapter 10: Contexts, Expressions, Outputs & `needs`
 
-**Reading Time:** ~45 minutes
+**Reading Time:** ~50 minutes
 **Prerequisites:** Chapter 09 (The Event Model)
 **Practice Notebook:** `notebooks/practice_10.ipynb`
 **Reference Notebook:** `notebooks/lab_10_job_outputs.ipynb`
@@ -140,6 +140,28 @@ A step with no `if:` at all behaves as though `if: success()` were present — t
 step normally skips everything after it, and why `ci.yml`'s job-summary step (Chapter 08 §9) needs
 `if: always()` explicitly to still run after a test failure.
 
+### Don't Always Rely on `always()`
+
+`always()` means *always* — including when a human presses **Cancel workflow**. Trace one run for
+PR #101, cancelled mid-flight, with three variants of the same report step:
+
+```
+Run cancelled while step "tests" is still executing
+───────────────────────────────────────────────────
+report step, no if:                       → SKIPPED  (implicit success() — false)
+report step, if: success() || failure()   → SKIPPED  (a cancelled run is neither)
+report step, if: always()                 → RUNS     (even on cancellation)
+```
+
+**What to notice:**
+
+- Only `always()` runs on cancellation — a feature for must-report steps, a hazard for anything
+  that can hang: the docs warn that an `always()` step which hits a critical failure can leave
+  the cancelled run waiting until its timeout.
+- `success() || failure()` covers both real outcomes but stays skipped on cancel; current GitHub
+  docs phrase that same intent as `if: ${{ !cancelled() }}` and recommend it over `always()` for
+  steps that shouldn't outlive a cancellation.
+
 ## 5. Where Expressions Are Allowed
 
 Expressions can appear in `if:`, `env:` values, `with:` input values, job/step `name:` fields, and
@@ -149,13 +171,30 @@ engine before the relevant step runs, not by the runner's shell.
 
 ## 6. Job Outputs: Publishing a Value
 
-A step publishes an output by writing to the `$GITHUB_OUTPUT` file:
+Getting Gate 3's risk score for PR #101 — the literal value `66.0` — into another job takes three
+explicit increments. This section builds the first two; Section 7 adds the third.
 
-```bash
-echo "risk_score=66.0" >> "$GITHUB_OUTPUT"
+### Increment 1 — A Step Writes to `$GITHUB_OUTPUT`
+
+A step publishes an output by appending a `key=value` line to the file `$GITHUB_OUTPUT` names:
+
+```
+$GITHUB_OUTPUT on the runner, before step "score":   (empty)
+
+    run: echo "risk_score=66.0" >> "$GITHUB_OUTPUT"
+
+$GITHUB_OUTPUT on the runner, after step "score":    risk_score=66.0
 ```
 
-The job then re-exposes that step's output at the job level:
+**What to notice:**
+
+- `$GITHUB_OUTPUT` is a plain text file on the runner, not an API call — the value is now the
+  four characters `66.0`, and a text file has no float type: the typing is already gone here.
+- The step must carry an `id:` (Increment 2 references it), or nothing can name what it wrote.
+
+### Increment 2 — The Job Re-Exposes the Step Output
+
+The job maps that step's output into its own job-level `outputs:` block:
 
 ```yaml
 jobs:
@@ -167,9 +206,15 @@ jobs:
         run: echo "risk_score=66.0" >> "$GITHUB_OUTPUT"
 ```
 
-Without this explicit two-step re-exposure (step output → job output), the value never leaves the
-job's own runner — this is the mechanism Chapter 08 §12 promised existed for passing data between
-otherwise-isolated jobs.
+State after `gate3` completes: the run's stored job outputs hold `gate3 → risk_score = "66.0"`.
+
+**What to notice:**
+
+- `steps.score` must match the step's `id: score` exactly — a typo yields an empty output, not
+  an error.
+- Without this explicit re-exposure (step output → job output), the value never leaves the job's
+  own runner — this is the mechanism Chapter 08 §12 promised existed for passing data between
+  otherwise-isolated jobs.
 
 ## 7. `needs`: Ordering Plus Data Access
 
@@ -191,7 +236,50 @@ without `needs` run in parallel, Chapter 08 §3), and it grants `automerge` read
 `needs.gate3.outputs.risk_score` — the value `gate3` published in Section 6. Neither effect happens
 without the other; `needs` is the single declaration that buys both ordering and data access.
 
+### Increment 3 — The Downstream Job Reads via `needs`
+
+Section 8 traces all three hops of the value end to end; two properties of this final hop first:
+
+**What to notice:**
+
+- The score arrives as the STRING `"66.0"`, not the float `66.0` — every hop is string-typed;
+  Section 9 covers what coercion then does inside `<=`.
+- Job outputs are capped at 1 MB per job and 50 MB per workflow run — right-sized for a score, a
+  flag, or a SHA; wrong-sized for files (see the comparison below).
+
+### Artifacts vs Caches vs Job Outputs
+
+Job outputs are one of three native mechanisms for moving data out of a job — each built for
+different cargo:
+
+| Mechanism | What it's for | Lifetime | Scope |
+| --- | --- | --- | --- |
+| Job outputs (via `needs`) | Small strings: a score, a flag, a SHA (1 MB/job, 50 MB/run) | This workflow run only | Downstream jobs declaring `needs` |
+| Artifacts (`actions/upload-artifact@v7`, `download-artifact@v8`) | Files the run produced: builds, reports, logs | 90 days by default (private repos configurable up to 400) | Later jobs in the same run; humans/API after the run |
+| Caches (`actions/cache@v6`) | Re-downloadable dependencies, to speed up *future* runs | Evicted after 7 days unused; 10 GB per repo | Future runs on the same branch, the default branch, or a PR's base branch |
+
+The `66.0` score is job-output cargo; Gate 3's rendered score report for PR #101 would be an
+artifact; this repo's `uv` download directory is cache cargo, keyed so it invalidates when the
+pinned dependency set changes:
+
+```yaml
+- uses: actions/cache@v6
+  with:
+    path: ~/.cache/uv
+    key: ${{ runner.os }}-uv-${{ hashFiles('requirements.txt') }}
+    restore-keys: |
+      ${{ runner.os }}-uv-
+```
+
+`hashFiles()` hashes the named files into the key, so any `requirements.txt` edit produces a new
+key. An exact key match is a *cache hit*; on a miss, the ordered `restore-keys` list is tried as
+prefix fallbacks and the most recent partial match is restored — stale but better than empty, and
+the install step tops it up. Version note: artifact actions `v3` were deprecated 2024-11-30, and
+the legacy cache service closed 2025-02-01 — on github.com, `actions/cache@v3` runs now fail.
+
 ## 8. Putting It Together: A Two-Job Pipeline
+
+Sections 6–7's three increments, laid end to end for PR #101:
 
 ```
 job "gate3"                                  job "automerge"  (needs: gate3)
@@ -282,6 +370,27 @@ An if: condition isn't behaving as expected
     skips everything after it unless always()/failure() is explicit
 ```
 
+### Reading the Engine's Own Trace: `##[debug]`
+
+Set the repository secret or variable `ACTIONS_STEP_DEBUG` to `true` (the secret wins if both
+exist) and the expression engine narrates every condition it evaluates straight into the step log
+— Chapter 13 covers workflow debugging in full:
+
+```
+##[debug]Evaluating condition for step: 'Merge when safe'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+```
+
+**What to notice:**
+
+- `Evaluating:` echoes the exact expression the engine parsed, and each `=>` line is a computed
+  value — when an `if:` misbehaves, this is the ground truth of what was actually compared.
+- These lines come from GitHub's engine *before* your shell ever runs — the same two-resolver
+  split as Section 10's `${{ env.X }}` vs `$X`.
+
 ## 15. Your First Project: Print Every Context Field You'll Actually Use
 
 For any workflow you're about to write, list every `${{ }}` expression you expect to need *before*
@@ -335,7 +444,11 @@ depth, and when a PAT or App token is actually required.
 - **GitHub Docs, "Accessing contextual information about workflow runs"** — https://docs.github.com/en/actions/learn-github-actions/contexts (fetched 2026-08)
 - **GitHub Docs, "Evaluate expressions in workflows and actions"** — https://docs.github.com/en/actions/learn-github-actions/expressions (fetched 2026-08)
 - **GitHub Docs, "Defining outputs for jobs"** — https://docs.github.com/en/actions/using-jobs/defining-outputs-for-jobs (fetched 2026-08)
-- **GitHub Docs, "Workflow syntax for GitHub Actions"** — https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds (fetched 2026-08) — see `needs`
+- **GitHub Docs, "Workflow syntax for GitHub Actions"** — https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idneeds (fetched 2026-08) — see `needs`; also the 1 MB/job and 50 MB/run output caps under `jobs.<job_id>.outputs`
+- **GitHub Docs, "Caching dependencies to speed up workflows"** — https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows (fetched 2026-08) — cache hits, `restore-keys`, branch scoping, the 10 GB/repo and 7-day-unused limits
+- **GitHub Docs, "Storing and sharing data from a workflow"** — https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/storing-and-sharing-data-from-a-workflow (fetched 2026-08) — artifacts; the 90-day default retention is documented on the retention-period settings page — https://docs.github.com/en/organizations/managing-organization-settings/configuring-the-retention-period-for-github-actions-artifacts-and-logs-in-your-organization (fetched 2026-08)
+- **GitHub Docs, "Enabling debug logging"** — https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/enabling-debug-logging (fetched 2026-08) — `ACTIONS_STEP_DEBUG`, secret-over-variable precedence
+- **actions/cache · actions/upload-artifact (READMEs)** — https://github.com/actions/cache · https://github.com/actions/upload-artifact (fetched 2026-08) — current majors (cache v6, upload-artifact v7, download-artifact v8) and the v3 shutoff dates (artifacts deprecated 2024-11-30; legacy cache service closed 2025-02-01)
 
 ## 20. Appendix A — Code Index
 

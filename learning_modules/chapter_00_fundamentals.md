@@ -1,6 +1,6 @@
 # Chapter 00: Fundamentals — Git, Pull Requests & GitHub Actions
 
-**Reading Time:** ~50 minutes
+**Reading Time:** ~55 minutes
 **Prerequisites:** None
 **Practice Notebook:** `notebooks/practice_00.ipynb`
 **Reference Notebook:** `notebooks/lab_00_fundamentals.ipynb`
@@ -156,6 +156,40 @@ commit — a snapshot with a message, an author, a timestamp, and a pointer back
 came before it. Anything in the working directory that was never staged is **not** included, even
 if it's sitting right next to files that were.
 
+### `git add` copies — it does not move
+
+Staging a file does not take it *out* of the working directory. `git add` **copies** its current
+content into the staging area. Real proof, from a throwaway repo (hint lines trimmed) — stage a
+brand-new file (call its content **vA**), then edit the working copy again (**vB**) *before*
+committing:
+
+```
+$ git add quicknote.txt          # working copy is vA; a COPY of vA is now staged
+$ git status
+On branch main
+Changes to be committed:
+        new file:   quicknote.txt
+
+$ echo "edited after staging" >> quicknote.txt    # working copy is now vB
+$ git status
+On branch main
+Changes to be committed:
+        new file:   quicknote.txt
+
+Changes not staged for commit:
+        modified:   quicknote.txt
+```
+
+**What to notice:**
+
+- The **same file appears under both headings at once** — the staged copy (vA) and the working
+  copy (vB) are two different versions living in two different areas. If `git add` *moved* the
+  file, this state couldn't exist.
+- Committing right now would commit **vA**, not the vB you see in your editor — `git add`
+  snapshots the moment you run it, not "this file, forever."
+- The staging area is a real file on disk: the first time you ever stage anything in a fresh
+  repo, watch `.git/index` appear in your file browser — that file *is* the staging area.
+
 ## 4. Reading `git status` and `git diff`
 
 `git status` is the one command that tells you, at any moment, exactly what's in each of the three
@@ -174,6 +208,62 @@ against the last commit — "what will actually go into the next commit." These 
 different comparisons, and conflating them is a common source of "I thought I already staged that"
 confusion. This chapter's lab walks a single file through all of these states, printing the real
 `git status`/`git diff` output at each one.
+
+### Worked trace: one file through every state
+
+The legend above becomes concrete by walking one file through it. Real output from a throwaway
+repo (repeated `On branch main` and hint lines trimmed). Create `notes.md` containing one line —
+call that content **vA** — then stage and commit it:
+
+```
+$ git status                        # notes.md just created (vA)
+On branch main
+Untracked files:
+        notes.md
+
+$ git add notes.md
+$ git status
+Changes to be committed:
+        new file:   notes.md
+
+$ git commit -m "docs: add notes.md"
+[main 76e060d] docs: add notes.md
+ 1 file changed, 1 insertion(+)
+$ git status
+nothing to commit, working tree clean
+```
+
+**What to notice:**
+
+- The file moves through the legend's headings in order: `Untracked files:` (working directory
+  only) → `Changes to be committed:` (a vA copy in the staging area) → gone once committed.
+- `nothing to commit, working tree clean` is the all-areas-agree state: working directory,
+  staging area, and history all hold vA of `notes.md`.
+
+Now append a second line to `notes.md` — the working copy becomes **vB** — and run both commands
+from the legend:
+
+```
+$ git status                        # after the edit (working copy is vB)
+Changes not staged for commit:
+        modified:   notes.md
+
+$ git diff
+--- a/notes.md
++++ b/notes.md
+@@ -1 +1,2 @@
+ Airlock demo notes (vA).
++Second line: gates fail closed (vB).
+```
+
+**What to notice:**
+
+- `modified:` under `Changes not staged for commit:` — the staging area and history still hold
+  vA; only the working directory has vB.
+- `git diff` (no arguments) shows exactly that gap: the working directory's new vB line against
+  the staged vA. `git diff --staged` right now would print *nothing* — staging and the last
+  commit still agree. One more `git add` + `git commit` repeats the first block's middle and the
+  file is back to clean — the cycle every change in this curriculum travels.
 
 ## 5. Branches Are Just Pointers
 
@@ -302,6 +392,29 @@ a pre-packaged action someone else wrote (`actions/checkout@v4` copies your repo
 machine); `run:` executes a raw shell command. This chapter's lab parses exactly this file and
 prints each piece back out, so the shape is something you've seen work, not just read about.
 
+### What the run looks like
+
+When that file fires, the Actions tab renders it roughly like this (authored, realistic shape):
+
+```
+CI                                      ← the workflow's name: key
+ ✓ test                        2m 04s   ← the job — the key you wrote under jobs:
+     ✓ Set up job                  2s
+     ✓ Checkout                    1s
+     ✓ Run tests               1m 58s
+     ✓ Complete job                0s
+```
+
+**What to notice:**
+
+- You wrote two steps; the run shows four. GitHub adds `Set up job` and `Complete job` to
+  **every** job automatically — `Set up job`'s log even lists the runner image and preinstalled
+  tools (see §19's run-logs reference).
+- The job displays as `test` — the identifier you chose as the key under `jobs:`; the
+  `jobs.<job_id>.name` field exists precisely to give it a friendlier display name in the UI.
+  Your own steps run in exactly the order listed under `steps:`, each with its own mark and
+  duration.
+
 ## 12. How a Workflow Connects Back to the PR Lifecycle
 
 The workflow above triggers on `pull_request` — meaning the moment step [3] of Section 8's
@@ -414,6 +527,8 @@ every chapter after it builds on.
 - **GitHub Docs, "About pull requests"** — https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests (fetched 2026-08)
 - **GitHub Docs, "About branches"** — https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches (fetched 2026-08)
 - **GitHub Docs, "Understanding GitHub Actions"** — https://docs.github.com/en/actions/get-started/understanding-github-actions (fetched 2026-08) — the source for Sections 10–12; Chapter 08 goes far deeper
+- **GitHub Docs, "Using workflow run logs"** — https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/using-workflow-run-logs (fetched 2026-08) — source for §11's implicit `Set up job` / `Complete job` steps ("GitHub adds two additional steps to each job")
+- **GitHub Docs, "Workflow syntax for GitHub Actions" — `jobs.<job_id>.name`** — https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax (fetched 2026-08) — source for §11's job display-name note
 
 ## 20. Appendix A — Code Index
 

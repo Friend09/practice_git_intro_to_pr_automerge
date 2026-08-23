@@ -1,6 +1,6 @@
 # Chapter 04: Reading PR Data
 
-**Reading Time:** ~45 minutes
+**Reading Time:** ~55 minutes
 **Prerequisites:** Chapter 02 (Refs & PRs)
 **Practice Notebook:** `notebooks/practice_04.ipynb`
 **Reference Notebook:** `notebooks/lab_04_pr_data.ipynb`
@@ -29,8 +29,8 @@ you've felt the REST N+1 pain yourself.
   a bounded page (capped at 100 items) plus a signal for whether more exist.
 - **Normalization:** Converting GitHub's raw, deeply-nested JSON into this repo's flat, typed
   `PRMetadata` — the shape every gate actually consumes.
-- **The 300-file cap:** The `/pulls/{n}/files` endpoint — the one place a PR's *individual changed
-  files* live — silently stops listing files past 300, a fact with real consequences for Gate 3.
+- **The 3,000-file cap:** The `/pulls/{n}/files` endpoint — the one place a PR's *individual changed
+  files* live — silently stops listing files past 3,000, a fact with real consequences for Gate 3.
 
 **Your prior knowledge connection:** If you've ever called a REST API and had to check for a
 `next_page` link or an `X-RateLimit-Remaining` header, pagination here works the same way — it's
@@ -39,8 +39,8 @@ not a GitHub-specific concept, just GitHub-specific numbers.
 ---
 
 > **🔬 Automation Engineer's Lens:** The single most common way a gate produces a wrong verdict
-> isn't a logic bug — it's reading truncated data and not noticing. A PR with 340 changed files
-> queried via `/pulls/{n}/files` silently returns only the first 300, and code that assumes "the
+> isn't a logic bug — it's reading truncated data and not noticing. A PR with 3,400 changed files
+> queried via `/pulls/{n}/files` silently returns only the first 3,000, and code that assumes "the
 > list I got back is the whole list" will undercount critical-path hits on exactly the PRs where
 > getting that count right matters most (the huge ones).
 
@@ -60,7 +60,7 @@ not a GitHub-specific concept, just GitHub-specific numbers.
 - How to fetch a single PR's raw object and normalize it into `PRMetadata`
 - How `gh pr list` works, and what its `--limit` flag actually controls
 - What pagination is, concretely: 100-item page caps and `Link` header `rel="next"` semantics
-- The 300-file cap on `/pulls/{n}/files` and why it matters for Gate 3's critical-path detection
+- The 3,000-file cap on `/pulls/{n}/files` and why it matters for Gate 3's critical-path detection
 - When to reach for `gh api --paginate` instead of hand-rolling page-following logic
 
 ---
@@ -78,7 +78,7 @@ not a GitHub-specific concept, just GitHub-specific numbers.
   - [5. `gh pr list`: Reading Many PRs](#5-gh-pr-list-reading-many-prs)
   - [6. From Raw JSON to `PRMetadata`](#6-from-raw-json-to-prmetadata)
   - [7. What Pagination Actually Is](#7-what-pagination-actually-is)
-  - [8. Two Concrete Ceilings: the 100-Item Page Cap and the 300-File Cap](#8-two-concrete-ceilings-the-100-item-page-cap-and-the-300-file-cap)
+  - [8. Two Concrete Ceilings: the 100-Item Page Cap and the 3,000-File Cap](#8-two-concrete-ceilings-the-100-item-page-cap-and-the-3000-file-cap)
   - [9. ⚠️ ADVANCED: `gh api --paginate` vs Hand-Rolled Link Following](#9-️-advanced-gh-api---paginate-vs-hand-rolled-link-following)
   - [10. ⚠️ ADVANCED: REST N+1 vs a Single GraphQL Query](#10-️-advanced-rest-n1-vs-a-single-graphql-query)
   - [11. ⚠️ ADVANCED: Rate Limits While Paginating](#11-️-advanced-rate-limits-while-paginating)
@@ -128,7 +128,23 @@ gh pr view 101 --repo owner/name --json number,title,additions,deletions,changed
 Notice the field names: `changedFiles`, not `changed_files`. `gh`'s `--json` flag uses its own
 camelCase vocabulary, which does **not** always match the raw REST field names one-to-one — a
 detail that trips people up moving between `gh pr view --json` output and `gh api` output for the
-"same" data.
+"same" data. Here is that difference shown, not asserted — the same PR #101, both read paths,
+values straight from this repo's PR #101 fixture spine:
+
+```json
+$ gh pr view 101 --json number,additions,deletions,changedFiles,state
+{"number": 101, "additions": 2, "deletions": 1, "changedFiles": 1, "state": "OPEN"}
+
+$ gh api repos/{owner}/{repo}/pulls/101      # trimmed to the same fields
+{"number": 101, "additions": 2, "deletions": 1, "changed_files": 1, "state": "open"}
+```
+
+**What to notice:**
+
+- `changedFiles` vs `changed_files` — the same value `1`, two vocabularies for one field.
+- `"OPEN"` vs `"open"` — `gh --json` returns GraphQL-style enum casing; the raw REST shape is
+  lowercase. Compare `fixtures/pr_list_sample.json` (gh shape) against `fixtures/pr_raw_pull.json`
+  (REST shape): the fixtures preserve this split deliberately.
 
 ## 4. `gh api`: Reading Anything
 
@@ -152,11 +168,47 @@ gh pr list --repo owner/name --state open --limit 100 --json number,title,state
 internally up to that limit, so you don't hand-roll paging logic for this specific subcommand.
 Requesting more than exist just returns however many are actually open.
 
+Against the sandbox's fixture list (`fixtures/pr_list_sample.json`), that command prints:
+
+```json
+[
+  {"number": 101, "title": "fix: correct typo in sandbox README", "state": "OPEN"},
+  {"number": 102, "title": "feat: add greeting helper to sandbox app", "state": "OPEN"},
+  {"number": 103, "title": "ci: tweak gate3 threshold comment", "state": "OPEN"}
+]
+```
+
+**What to notice:** one flat JSON array — `gh` already stitched the pages together, so no page
+boundary is visible; and `"state": "OPEN"` is `gh`'s enum casing from Section 3's naming split.
+
 ## 6. From Raw JSON to `PRMetadata`
 
 Every gate in this curriculum consumes `pr_automerge.models.PRMetadata`, not raw GitHub JSON.
 Normalizing means picking the handful of fields gates actually need and flattening nested
-structures:
+structures. Here is the whole trip, worked end to end on PR #101. The input is the raw REST
+shape from `gh api repos/{o}/{r}/pulls/101`, trimmed from this repo's fixture
+`fixtures/pr_raw_pull.json`:
+
+```json
+{
+  "number": 101,
+  "title": "fix: correct typo in sandbox README",
+  "draft": false,
+  "head": {
+    "ref": "fix/readme-typo",
+    "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+  },
+  "base": {
+    "ref": "main",
+    "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736"
+  },
+  "additions": 2,
+  "deletions": 1,
+  "changed_files": 1
+}
+```
+
+The field-path map applied by `normalize_pr` (this chapter's lab):
 
 ```
 raw["head"]["ref"]         →  PRMetadata.head
@@ -166,6 +218,39 @@ raw["deletions"]           →  PRMetadata.deletions
 raw["changed_files"]       →  PRMetadata.changed_files
 (computed separately)      →  PRMetadata.critical_path_hits   (Section 8)
 ```
+
+And the object that comes out — every field of the real dataclass
+(`pr_automerge/models.py`), filled with that fixture's values:
+
+```python
+PRMetadata(
+    number=101,
+    title="fix: correct typo in sandbox README",
+    base="main",               # raw["base"]["ref"]
+    head="fix/readme-typo",    # raw["head"]["ref"]
+    additions=2,
+    deletions=1,
+    changed_files=1,
+    critical_path_hits=0,      # not in the raw object at all -- see Section 8
+    draft=False,
+)                              # .lines_changed property -> 2 + 1 = 3
+```
+
+Running `python labs/lab_04_pr_data.py` (fixture mode) prints exactly this object back —
+compare its `normalized:` line against the raw JSON above, field for field.
+
+**What to notice:**
+
+- **`head` takes `head.ref` (the branch name), not `head.sha`.** Both live under the same
+  `"head"` object; the sha (`a1b2c3d4…`) names the exact *commit* — check runs and gate
+  workflows pin to it (Ch 12) — while the flat dataclass keeps only the branch. Grabbing the
+  wrong sibling type-checks fine and is silently wrong.
+- **This raw shape is snake_case** (`changed_files`); through `gh pr view --json` the same field
+  arrives camelCase (`changedFiles` — the split Section 3 showed). Normalize from one shape only:
+  this repo standardizes on the raw REST shape as ground truth (Section 4).
+- **`critical_path_hits=0` was never read from this payload** — the single-PR object says how
+  *many* files changed, never *which*; that comes from the capped files endpoint (Section 8),
+  which is why it's a separately-sourced constructor argument.
 
 Keeping this normalization in exactly one function (`normalize_pr` in this chapter's lab) means
 every gate downstream sees the same shape, regardless of whether the data originally came from
@@ -178,14 +263,27 @@ dozens more) never return an unbounded result set. Each response is one **page**
 `Link` header naming the URL for the next page, if one exists:
 
 ```
-Link: <https://api.github.com/...&page=2>; rel="next", <...&page=5>; rel="last"
+link: <https://api.github.com/repositories/1300192/issues?page=2>; rel="prev",
+      <https://api.github.com/repositories/1300192/issues?page=4>; rel="next",
+      <https://api.github.com/repositories/1300192/issues?page=515>; rel="last",
+      <https://api.github.com/repositories/1300192/issues?page=1>; rel="first"
 ```
+
+(One header line, wrapped here for reading — verbatim from GitHub's pagination docs, fetched
+2026-08. This caller is sitting on page 3 of 515: `prev` is 2, `next` is 4.)
+
+**What to notice:**
+
+- Up to four `rel` values can appear; a pager only ever needs `rel="next"` — follow it until
+  it's gone.
+- The terminator is an **absence**: no `rel="next"` means last page. A parser bug therefore
+  fails toward "one page was everything" — silent truncation, the exact failure §12 dissects.
 
 No `Link` header (or no `rel="next"` entry) means you've read the last page. This is a standard
 REST pagination pattern, not something GitHub invented — the concrete numbers in Section 8 are
 what's GitHub-specific.
 
-## 8. Two Concrete Ceilings: the 100-Item Page Cap and the 300-File Cap
+## 8. Two Concrete Ceilings: the 100-Item Page Cap and the 3,000-File Cap
 
 Two different ceilings matter here, and they're easy to conflate:
 
@@ -195,19 +293,37 @@ issues multiple 100-item page requests and assembles the combined result for you
 yourself with `gh api` means checking the `Link` header after every request and re-issuing against
 the `rel="next"` URL until it's absent.
 
-**The 300-file hard ceiling** is sharper and easy to miss: `GET /repos/{o}/{r}/pulls/{n}/files` —
+**The 3,000-file hard ceiling** is sharper and easy to miss: `GET /repos/{o}/{r}/pulls/{n}/files` —
 the endpoint that lists which *individual files* a PR touched — stops returning results after
-**300 files**, full stop, even if you paginate correctly. There is no further page beyond that
-point; the data simply isn't retrievable through this endpoint for a PR that large. This is exactly
-why Gate 3's risk model (Chapter 16) treats `changed_files` (a plain count field on the PR object
-itself, unaffected by this cap) and `critical_path_hits` (which *requires* the capped files list)
-as two independently sourced numbers — and why a PR that touches 300+ files should already be well
-past Gate 3's hard line-count ceiling before this cap becomes the limiting factor.
+**3,000 files**, full stop, even if you paginate correctly ("Responses include a maximum of 3000
+files" — GitHub Docs, fetched 2026-08; 30/page by default, `per_page` max 100). There is no further
+page beyond that point; the data simply isn't retrievable through this endpoint for a PR that large.
+This is exactly why Gate 3's risk model (Chapter 16) treats `changed_files` (a plain count field on
+the PR object itself, unaffected by this cap) and `critical_path_hits` (which *requires* the capped
+files list) as two independently sourced numbers — and why a PR that touches 3,000+ files should
+already be well past Gate 3's hard line-count ceiling before this cap becomes the limiting factor.
 
 ```
-per_page cap:      100 items   →  applies to EVERY list endpoint, paginate past it freely
-files-list cap:    300 files   →  applies ONLY to /pulls/{n}/files, NO page exists past it
+per_page cap:      100 items     →  applies to EVERY list endpoint, paginate past it freely
+files-list cap:    3,000 files   →  applies ONLY to /pulls/{n}/files, NO page exists past it
 ```
+
+If you've seen a **300**-file cap quoted for PR file lists, that number is real but belongs to a
+*different* endpoint: the **compare-two-commits** API documents "up to 300 changed files for the
+entire comparison" (GitHub Docs, fetched 2026-08). Wherever the ceiling sits for the endpoint you
+actually call, the airlock rule is identical: compare the uncapped `changed_files` count against
+that documented cap **before** trusting any per-file computation — a cap you didn't check is a
+fail-open read. URLs for both endpoints are in §19.
+
+### The page math, concretely
+
+Take a PR whose object says `"changed_files": 3007`. Walking its file list at `per_page=100`
+looks like a ceil(3007 / 100) = **31**-request walk — but the cap intervenes: pages 1–30 return
+100 files each (3,000 total), and page 30 carries no `rel="next"`. Whenever `changed_files`
+exceeds the endpoint's documented cap, the files past it are **never returned by any page**:
+the walk still terminates cleanly at the cap, every response is a `200`, and nothing in-band
+tells you the list stopped 7 files short of `changed_files`. That clean-looking truncation is
+precisely §12's undercounting case study.
 
 ## 9. ⚠️ ADVANCED: `gh api --paginate` vs Hand-Rolled Link Following
 
@@ -244,21 +360,23 @@ avoid it.
 > ⚠️ **ADVANCED TOPIC:** Watching the rate-limit budget disappear mid-paginate.
 > **Skip on first read.**
 
-`GITHUB_TOKEN` gets 5,000 requests/hour (Chapter 11 covers token identities and their distinct
-limits in full). Each page of a paginated response is a separate request against that budget —
-paginating through 300 files at 100/page is 3 requests, cheap; but a script that re-fetches full
+`GITHUB_TOKEN` inside Actions gets 1,000 requests/hour per repository — not the 5,000/hour a
+PAT gets; Chapter 11 covers token identities and their distinct limits in full (verified against
+GitHub Docs, 2026-08). Each page of a paginated response is a separate request against that budget —
+paginating through a capped-out 3,000-file list at 100/page is 30 requests, still cheap against a
+1,000/hr budget; but a script that re-fetches full
 file lists for every PR in a repo with thousands of open PRs, every run, can burn through the
 budget in ways a single-PR gate never will. `gh api` responses include `X-RateLimit-Remaining` in
 every response, which is the field to watch, not the vaguer `x-ratelimit-limit`.
 
 ## 12. Case Study: Undercounting Critical-Path Hits
 
-A 340-file automated dependency-bump PR touches `pr_automerge/scoring.py` (a critical path) as
-file #312 in GitHub's listing order. A naive Gate 3 implementation that reads
-`/pulls/{n}/files` expecting "the complete file list" gets only the first 300 — critical-path hit
-#312 is silently absent from that response, and the PR's risk score comes back lower than it
+A 3,340-file automated dependency-bump PR touches `pr_automerge/scoring.py` (a critical path) as
+file #3,012 in GitHub's listing order. A naive Gate 3 implementation that reads
+`/pulls/{n}/files` expecting "the complete file list" gets only the first 3,000 — critical-path hit
+#3,012 is silently absent from that response, and the PR's risk score comes back lower than it
 should. The fix isn't a smarter pagination loop (Section 8 established there's no further page to
-fetch) — it's checking `changed_files` (uncapped, on the PR object itself) against `300` *before*
+fetch) — it's checking `changed_files` (uncapped, on the PR object itself) against `3,000` *before*
 trusting any critical-path count computed from the files endpoint, and treating "at or above the
 cap" as an automatic critical-path hit in its own right.
 
@@ -301,10 +419,10 @@ against the raw JSON you just printed by hand — confirm every field made the t
    snake_case (`changed_files`).
 
 2. **"A list endpoint eventually returns everything if I ask for enough pages."** True for most
-   endpoints — but `/pulls/{n}/files` has a hard 300-file ceiling with no further page beyond it.
+   endpoints — but `/pulls/{n}/files` has a hard 3,000-file ceiling with no further page beyond it.
 
 3. **"Pagination is something GitHub invented."** No — it's a standard `Link`-header REST pattern.
-   The 100-item and 300-file numbers are GitHub-specific; the mechanism isn't.
+   The 100-item and 3,000-file numbers are GitHub-specific; the mechanism isn't.
 
 4. **"I should normalize inline, wherever I happen to need `PRMetadata`."** Keep normalization in
    one function. Every gate needs the exact same shape; duplicating the mapping logic is how one
@@ -319,7 +437,7 @@ against the raw JSON you just printed by hand — confirm every field made the t
   `gh api` (general-purpose, raw REST vocabulary).
 - **Normalize once:** every gate consumes `PRMetadata`, never raw JSON directly — keep the mapping
   in one function.
-- **100-item page cap** on every list endpoint; **300-file hard ceiling** specifically on
+- **100-item page cap** on every list endpoint; **3,000-file hard ceiling** specifically on
   `/pulls/{n}/files`, with no page beyond it.
 - **`gh api --paginate`** follows `Link: rel="next"` automatically — reach for it before hand-
   rolling the loop.
@@ -337,9 +455,11 @@ are even required before a merge — branch protection and rulesets — which is
 ## 19. Additional Resources
 
 - **GitHub REST API, "Pull requests"** — https://docs.github.com/en/rest/pulls/pulls (fetched 2026-08)
-- **GitHub REST API, "List pull requests files"** — https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files (fetched 2026-08) — see the 300-file note
+- **GitHub REST API, "List pull requests files"** — https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files (fetched 2026-08) — the source of §8's 3,000-file ceiling: "Responses include a maximum of 3000 files. The paginated response returns 30 files per page by default."
+- **GitHub REST API, "Compare two commits"** — https://docs.github.com/en/rest/commits/commits#compare-two-commits (fetched 2026-08) — "includes up to 300 changed files for the entire comparison"; the origin of the oft-quoted 300 (see the §8 contrast)
 - **GitHub Docs, "Using pagination in the REST API"** — https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api (fetched 2026-08)
 - **GitHub CLI Manual, "gh api"** — https://cli.github.com/manual/gh_api (fetched 2026-08) — see `--paginate`
+- **GitHub Docs, "Rate limits for the REST API"** — https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api (fetched 2026-08) — `GITHUB_TOKEN` in Actions: 1,000 req/hr per repository; PAT: 5,000 req/hr
 
 ## 20. Appendix A — Code Index
 

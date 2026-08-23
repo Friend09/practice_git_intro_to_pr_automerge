@@ -1,6 +1,6 @@
 # Chapter 21: Reusable Workflows & Composite Actions
 
-**Reading Time:** ~40 minutes
+**Reading Time:** ~50 minutes
 **Prerequisites:** Chapter 08 (Actions Anatomy)
 **Practice Notebook:** `notebooks/practice_21.ipynb`
 **Reference Notebook:** `notebooks/lab_21_reusable_workflows.ipynb`
@@ -116,6 +116,28 @@ steps:
 Everything the composite action's steps do runs on the *calling* job's own runner — it's not a
 separate job, just a named shortcut for a sequence of steps.
 
+### The Three Custom-Action Flavors: Composite, JavaScript, Docker
+
+Composite is one of **three** ways to package a custom action. All three ship an `action.yml` and
+are invoked identically with `uses:`; they differ in what executes underneath:
+
+- **Composite** — `runs: {using: composite}`: a YAML list of steps; no code runtime at all.
+- **JavaScript** — `runs: {using: node20}` or `node24`, the only two Node runtimes GitHub
+  currently accepts: a Node.js program run directly on the runner. GitHub's `@actions/*` toolkit
+  does the plumbing — `@actions/core` for inputs/outputs/exit status, `@actions/github` for an
+  authenticated Octokit client.
+- **Docker container** — `runs: {using: docker}`: the runner builds or pulls an image and runs
+  your code inside it — Linux runners only.
+
+| Flavor | Setup Effort | Control | Failure Visibility | Security Exposure | Maintenance Burden |
+| --- | --- | --- | --- | --- | --- |
+| Composite | Minimal — one plain-YAML file | Fair — only step-level constructs | Strong — inner steps log separately | Low — no bundled dependencies | Low — no runtime bumps |
+| JavaScript | Moderate — Node project, bundling | Strong — full toolkit API | Moderate — one opaque step | Moderate — npm supply chain | Moderate — Node runtime bumps |
+| Docker | High — Dockerfile and image | Excellent — fully pinned environment | Moderate — container logs only | Moderate — image supply chain | High — base-image patching, Linux-only |
+
+Section 8's extraction uses composite — the right flavor when the duplication is itself a
+sequence of existing steps.
+
 ## 3. Reusable Workflows: Job-Level Reuse
 
 A reusable workflow is an ordinary-looking workflow file that declares `on: workflow_call` instead
@@ -155,6 +177,54 @@ A reusable workflow's `workflow_call` trigger declares `inputs:` (typed: `string
 extended across workflow boundaries. Composite actions' `inputs:` are always plain strings, with no
 type declaration — a real capability gap between the two mechanisms.
 
+### A Complete Minimal `action.yml`, Traced End to End
+
+The same input/output plumbing, shown whole. This composite action formats the Gate 3 verdict
+line for PR #101 (head `a1b2c3d4e5f6…`):
+
+```yaml
+# .github/actions/format-gate-verdict/action.yml (illustrative -- not applied to this repo)
+name: Format Gate Verdict
+inputs:
+  gate_name:
+    required: true
+  risk:
+    required: true
+  threshold:
+    required: true
+outputs:
+  verdict_line:
+    value: ${{ steps.fmt.outputs.line }}
+runs:
+  using: composite
+  steps:
+    - id: fmt
+      shell: bash
+      run: echo "line=${{ inputs.gate_name }}: risk=${{ inputs.risk }} <= threshold=${{ inputs.threshold }}" >> "$GITHUB_OUTPUT"
+```
+
+```yaml
+# Caller (before): inputs flow DOWN via with:
+- id: verdict
+  uses: ./.github/actions/format-gate-verdict
+  with:
+    gate_name: gate3-risk-score
+    risk: '66.0'
+    threshold: '70'
+# Caller (after): the output flows BACK via steps.<id>.outputs.<name>
+- run: echo "${{ steps.verdict.outputs.verdict_line }}"
+  # prints: gate3-risk-score: risk=66.0 <= threshold=70
+```
+
+**What to notice:**
+
+- `'66.0'` is quoted — composite inputs are untyped strings, exactly the §5 capability gap.
+- The output makes two hops: step `fmt` writes to `$GITHUB_OUTPUT`, the action's
+  `outputs.verdict_line.value` maps it out, and the caller reads `steps.verdict.outputs.verdict_line`.
+- The `risk=66.0 <= threshold=70` portion is character-for-character the check-run
+  `output.title` in `fixtures/check_run_response.json` — the same PR #101 story every
+  chapter traces.
+
 ## 6. Side-by-Side Comparison
 
 | Property | Composite Action | Reusable Workflow | Setup Effort |
@@ -171,6 +241,38 @@ type declaration — a real capability gap between the two mechanisms.
 `actions/setup-python@v5` scaffold as their first two steps — verified by parsing both real files
 (this chapter's lab does exactly this, read-only). This is precisely the kind of duplication
 composite actions exist to eliminate: two files, same two steps, copy-pasted rather than shared.
+
+Here are the two files' opening steps, quoted verbatim from the live workflows:
+
+```yaml
+# .github/workflows/gate2-pr-health.yml -- job "evaluate", steps 1-2
+      - name: Checkout (for pr_automerge package)
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+```
+
+```yaml
+# .github/workflows/gate3-score.yml -- job "score", steps 1-2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+```
+
+**What to notice:**
+
+- The `uses:` values are character-identical — `actions/checkout@v4`, `actions/setup-python@v5` —
+  and both pin `python-version: '3.12'`.
+- Only the checkout step's human `name:` differs — cosmetic drift, the kind copy-paste invites.
+- A Python version bump today means two synchronized edits; Section 12's five-times-vs-once
+  arithmetic starts from exactly this pair.
 
 ## 8. What the Extraction Would Look Like
 
@@ -260,6 +362,27 @@ If most of these point toward "extract," a composite action (step-level) or reus
 (job-level, per Section 4's distinction) is the right native mechanism — never hand-rolled
 duplication-detection tooling or a templating system layered on top of YAML.
 
+### Org-Level Reuse: Ruleset-Required Workflows and Starter Workflows
+
+Beyond extraction, GitHub offers two org-wide reuse mechanisms. **Required workflows are now a
+ruleset rule**: the 2023-era standalone "required workflows" feature (public beta, January 2023)
+was retired in favor of repository rules — configurable via rulesets from September 20, 2023, with
+the old feature switched off on October 18, 2023. The current mechanism is the **"Require
+workflows to pass before merging"** rule in an organization or enterprise ruleset: you point it at
+a workflow file in a source repository, and every PR in every targeted repository must run and
+pass that workflow before merging. Ruleset workflows support the `pull_request`,
+`pull_request_target`, and `merge_group` events, and the rule blocks direct pushes to targeted branches (the workflow exists only
+in PR/merge-queue context — fail-closed, in the airlock spirit). Organization rulesets require a
+GitHub Team or Enterprise plan, and this rule is documented under GitHub Enterprise Cloud (its GA
+announcement addressed Enterprise Cloud customers) — check the plan matrix before designing
+around it.
+
+**Starter workflows** are the suggestion-strength counterpart: workflow files placed in your
+org's `.github` repository under a `workflow-templates/` directory appear as templates in every
+repo's "New workflow" chooser, and the `$default-branch` placeholder is automatically replaced
+with the repository's real default branch when a workflow is created from the template. Starter
+workflows propose; ruleset-required workflows enforce.
+
 ## 15. Your First Project: Find Your Own Repo's Duplication
 
 Run this chapter's lab against two of your own repo's workflow files (or reuse this repo's own
@@ -313,6 +436,13 @@ when does building your own still win?
 
 - **GitHub Docs, "Reusing workflows"** — https://docs.github.com/en/actions/using-workflows/reusing-workflows (fetched 2026-08)
 - **GitHub Docs, "Creating a composite action"** — https://docs.github.com/en/actions/creating-actions/creating-a-composite-action (fetched 2026-08)
+- **GitHub Docs, "Metadata syntax"** (`runs.using`: `composite` / `node20` / `node24` / `docker`) — https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax (fetched 2026-08)
+- **GitHub Docs, "Creating a JavaScript action"** (`@actions/core`, `@actions/github` toolkit; `node24` example) — https://docs.github.com/en/actions/creating-actions/creating-a-javascript-action (fetched 2026-08)
+- **GitHub Docs, "Creating a Docker container action"** (Linux-runner requirement) — https://docs.github.com/en/actions/creating-actions/creating-a-docker-container-action (fetched 2026-08)
+- **GitHub Docs (Enterprise Cloud), "Available rules for rulesets"** — the "Require workflows to pass before merging" rule — https://docs.github.com/en/enterprise-cloud@latest/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets (fetched 2026-08)
+- **GitHub Changelog, "Required Workflows will move to Repository Rules"** (Sep 20 / Oct 18, 2023 dates) — https://github.blog/changelog/2023-08-02-github-actions-required-workflows-will-move-to-repository-rules/ (fetched 2026-08)
+- **GitHub Changelog, "Requiring workflows with Repository Rules is generally available"** (Oct 11, 2023) — https://github.blog/changelog/2023-10-11-requiring-workflows-with-repository-rules-is-generally-available/ (fetched 2026-08)
+- **GitHub Docs, "Creating starter workflows for your organization"** (`.github` repo, `workflow-templates/`, `$default-branch`) — https://docs.github.com/en/actions/using-workflows/creating-starter-workflows-for-your-organization (fetched 2026-08)
 - **This repo's own** `.github/workflows/gate2-pr-health.yml` and `gate3-score.yml` — the real duplication this chapter's case study is drawn from
 
 ## 20. Appendix A — Code Index

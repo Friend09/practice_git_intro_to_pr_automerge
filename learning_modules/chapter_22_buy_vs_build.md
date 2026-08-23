@@ -115,15 +115,19 @@ single line of workflow YAML or Python.
 
 ## 3. The Feature Comparison, Honestly
 
-| Dimension | Custom Build (this curriculum) | Third-Party Tool | Setup Effort |
-| --- | --- | --- | --- |
-| Setup effort | High — the full curriculum's build | Minimal — install + config file | Minimal (buy) / High (build) |
-| Hosting | Self-hosted, your own Actions minutes | Vendor-hosted | Minimal (buy) |
-| Custom risk-scoring logic | Fully custom, any formula | Bounded by the vendor's config DSL | Moderate (build, once) |
-| Multi-repo rollout | Manual per-repo, or reusable workflows (Ch 21) | Native, one install covers an org | Minimal (buy) |
-| Vendor lock-in | None | Real — pricing/feature/continuity risk | — |
-| Cost | Actions minutes (often free) | Often free for OSS, paid for private/org | — |
-| Debuggability | Full — your own code and logs | Limited to the vendor's own exposed logs | — |
+| Approach | Setup Effort | Control | Failure Visibility | Security Exposure | Maintenance Burden |
+| --- | --- | --- | --- | --- | --- |
+| Custom build (this curriculum) | High — the full curriculum's build | Excellent — any formula you can code | Excellent — your own code and logs | Low — per-run `GITHUB_TOKEN` (Ch 11) | High — you own every workflow |
+| Third-party tool (Mergify/Kodiak) | Minimal — install + config file | Fair — bounded by the config DSL | Fair — vendor's exposed logs only | Moderate — org-wide App write access | Low — vendor operates it |
+
+The remaining differences are factual attributes rather than quality/cost levels:
+
+| Dimension | Custom Build (this curriculum) | Third-Party Tool |
+| --- | --- | --- |
+| Hosting | Self-hosted, your own Actions minutes | Vendor-hosted |
+| Multi-repo rollout | Manual per-repo, or reusable workflows (Ch 21) | Native, one install covers an org |
+| Vendor lock-in | None | Real — pricing/feature/continuity risk |
+| Cost | Actions minutes (often free) | Often free for OSS, paid for private/org |
 
 ## 4. Where This Curriculum's Value Actually Concentrates
 
@@ -161,9 +165,19 @@ likely to make either choice actively wrong rather than just less convenient.
 A team shaped like this repo's own curriculum sandbox (needs custom scoring, single repo, has
 in-house Actions expertise, no budget for a paid tool) scores **build=5, buy=0** — strongly
 favoring exactly what this curriculum built. A team rolling a simple "require 2 approvals + green
-CI" policy out across dozens of repos, with no custom scoring need and no existing Actions
-expertise, scores **build=0, buy=4** — strongly favoring a third-party tool instead. Same
-heuristic, opposite conclusions, because the underlying situations are genuinely different.
+CI" policy out across dozens of repos, with no custom scoring need, no existing Actions
+expertise, and budget for a paid tool, scores **build=0, buy=4** — strongly favoring a
+third-party tool instead. Same heuristic, opposite conclusions, because the underlying
+situations are genuinely different.
+
+**What to notice:**
+
+- No *single* input flips either verdict — team A stays "build" and team B stays "buy" under
+  every one-factor change; only a combination of at least two changed factors swings the answer.
+- Team B's build=0 depends on that budget line: without budget for a paid tool, the score
+  becomes build=1, buy=4 — same verdict, but the shutout disappears.
+- Ties go to build — Section 5's comparison is `build_score >= buy_score`, a deliberate bias
+  toward the option with no vendor dependency.
 
 ## 7. Renovate: A Different Category
 

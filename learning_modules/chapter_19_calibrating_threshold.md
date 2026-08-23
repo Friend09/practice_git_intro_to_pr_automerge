@@ -150,10 +150,17 @@ thresholds 40/55/70/85/100:
 | 85 | MERGE | MERGE | MERGE | HOLD | HOLD |
 | 100 | MERGE | MERGE | MERGE | HOLD | HOLD |
 
-Two things jump out: the default threshold of 70 is the exact point where the small feature and
-workflow-touch PRs cross from HOLD to MERGE — a threshold of 65 would hold both; and the large
-migration PR **never** merges regardless of threshold, because it's blocked by the hard ceiling
-(Section 8), not the weighted score at all.
+**What to notice:**
+
+- The typo fix (5.9) merges at every swept threshold — no candidate in a realistic range holds it.
+- The default of 70 is the exact crossing point for the small feature (66.0) and the workflow
+  touch (67.0): a threshold of 65 would hold both; 70 admits both. The whole calibration debate
+  for this PR set lives in that 55→70 gap.
+- The refactor (172.0) holds across this entire sweep, but it's threshold-bound, not
+  ceiling-bound: `test_lowering_threshold_can_flip_a_borderline_pr` in `tests/test_scoring.py`
+  pins that at threshold 200.0 it merges (340 lines is still under the 500-line ceiling).
+- The large migration **never** merges at ANY threshold — 900 lines exceeds the hard ceiling of
+  500, so it's blocked before the weighted score is even compared (Section 8).
 
 ## 5. `gates.yml`: Where the Number Actually Lives
 
@@ -204,15 +211,17 @@ Recalibrating Gate 3's threshold
 ## 8. ⚠️ ADVANCED: The Hard Ceiling Doesn't Move With the Threshold
 
 > ⚠️ **ADVANCED TOPIC:** Why `hard_ceiling_lines` is a separate calibration axis from `threshold`.
-> **Skip on first read** — Chapter 16 §7 already introduced the ceiling; this section is the
+> **Skip on first read** — Chapter 16 §5 already introduced the ceiling; this section is the
 > calibration-specific implication.
 
 Section 4's table showed the large migration PR held at every threshold from 40 to 100 — because
 `compute_risk`'s linear formula alone can't express "this is simply too big, full stop," the hard
-ceiling exists as an independent check (Chapter 16 §7). Recalibrating `threshold` alone never
+ceiling exists as an independent check (Chapter 16 §5). Recalibrating `threshold` alone never
 changes this PR's outcome; recalibrating `hard_ceiling_lines` is a separate decision with its own
 sweep, answering a different question ("what's the absolute largest diff I'd EVER auto-merge") from
-what `threshold` answers ("within that limit, how risky is too risky").
+what `threshold` answers ("within that limit, how risky is too risky"). Chapter 16 §5 works the
+exact bracket: at the recalibrated threshold of 200.0, a 600-line PR scores 185.0 — passing on
+score — and still holds on the ceiling.
 
 ## 9. ⚠️ ADVANCED: Weight Calibration vs Threshold Calibration
 

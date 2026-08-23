@@ -133,8 +133,22 @@ https://api.github.com/repos/{o}/{r}/pulls/5`.
 Beyond `gh pr view --json <fields>`, the general tool is `gh api`:
 
 ```bash
-gh api repos/OWNER/REPO/pulls/5 --jq '{title, additions, deletions, changed_files}'
+gh api repos/OWNER/REPO/pulls/101 --jq '{title, additions, deletions, changed_files}'
 ```
+
+Against the running PR #101 example (head `a1b2c3d4e5f6…` — the trimmed raw response lives in
+`fixtures/pr_raw_pull.json`), this prints:
+
+```json
+{"title":"fix: correct typo in sandbox README","additions":2,"deletions":1,"changed_files":1}
+```
+
+**What to notice:**
+
+- The raw `GET /pulls/101` response is a ~90-field JSON object; `--jq` reshaped it to exactly the
+  4 fields you asked for. That reshaping *is* the point of `--jq`.
+- `additions=2, deletions=1, changed_files=1` are the same numbers Gate 3 (Chapter 16) feeds its
+  risk formula — this one GET is the read half of the whole scoring pipeline.
 
 `--jq` filters the response server-side-feeling (actually client-side, but before it hits your
 terminal) so you're not parsing a full JSON blob by hand for three fields. This is the pattern
@@ -157,14 +171,22 @@ Request 3: GET .../files?per_page=100&page=3  →  40 files,  no rel="next"
 A PR under 100 files "just works" with a single unpaginated call — which is exactly what makes
 this bug so common: it passes every test you write against a small PR, then silently under-reports
 on the first PR that touches 150 files. `gh api --paginate` handles this for you; Chapter 16's
-Gate 3 relies on it (and additionally handles GitHub's hard 300-file / 3,000-line diff-truncation
-ceiling, which pagination alone doesn't solve).
+Gate 3 relies on it (and additionally handles GitHub's hard 3,000-file truncation ceiling on
+`/pulls/{n}/files`, which pagination alone doesn't solve).
 
 ## 5. Rate Limits
 
 Every token has a budget. `GITHUB_TOKEN` inside Actions gets roughly 1,000 requests per hour per
 repository; an authenticated PAT or App installation token gets roughly 5,000 per hour (GitHub
-Apps can get considerably more at scale — see Section 11). Check your remaining budget with:
+Apps can get considerably more at scale — see Section 11).
+
+| Token type | Primary limit | Scope |
+| --- | --- | --- |
+| `GITHUB_TOKEN` in Actions | 1,000 requests/hr | per repository |
+| PAT (classic or fine-grained) | 5,000 requests/hr | per account |
+| GitHub App installation token | 5,000 requests/hr baseline | per installation — +50/hr per repo and per org user above 20 of each, capped at 12,500/hr (15,000/hr on Enterprise Cloud) |
+
+Check your remaining budget with:
 
 ```bash
 gh api rate_limit --jq '.resources.core | {limit, remaining, reset}'
@@ -203,6 +225,25 @@ gh api repos/OWNER/REPO/check-runs \
   -f "output[summary]=risk=66.0 <= threshold=70"
 ```
 
+GitHub answers the POST with the created check run — trimmed here to the four fields that matter
+(from `fixtures/check_run_response.json`; Chapter 12 §5 walks the full response):
+
+```json
+{
+  "id": 900123456,
+  "name": "gate3-risk-score",
+  "status": "completed",
+  "conclusion": "success"
+}
+```
+
+**What to notice:**
+
+- The `id` (`900123456`) is what Appendix A.2's helper returns — you'd need it to PATCH this
+  check run later (e.g. `in_progress` → `completed`).
+- Branch protection matches on `name` (`gate3-risk-score`), not on the id — the name is the
+  contract between this POST and the required-checks list (Chapter 05).
+
 Chapter 12 goes deeper on check runs specifically (their full lifecycle, `in_progress` vs
 `completed`); this section is here so you recognize the pattern the first time you see it, in
 Section 6's write examples and in Gate 2/3's actual workflow YAML.
@@ -228,6 +269,29 @@ reimplementing it, at the cost of a subprocess call per API request. A direct HT
 (`httpx`, GitHub's own `PyGithub`) trades that subprocess overhead for you owning auth headers and
 retry logic yourself. For this curriculum's scale, the subprocess cost is irrelevant; the
 simplicity of reusing `gh`'s auth is worth it.
+
+### A Third Way: `actions/github-script`
+
+Inside a workflow there's a third option alongside `gh` and a raw HTTP client: the
+`actions/github-script` action (current major: `@v9`) hands your JavaScript a pre-authenticated
+Octokit client (`github`) and the event context (`context`) — no token wiring, no JSON parsing:
+
+```yaml
+- name: Post Gate 3 comment on PR #101
+  uses: actions/github-script@v9
+  with:
+    script: |
+      await github.rest.issues.createComment({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        issue_number: 101,
+        body: "Gate 3: risk=66.0 <= threshold=70 — merge",
+      });
+```
+
+That's the whole trade in one line: `gh` gives you shell-native calls, an HTTP client gives you
+full control, and `github-script` gives you an authenticated client and the event payload for
+free — but only inside a workflow step.
 
 ## 10. ⚠️ ADVANCED: Webhooks, Briefly
 
@@ -362,13 +426,15 @@ built from.
 - **GitHub Docs, "Differences between GitHub Apps and OAuth apps"** — https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps (fetched 2026-08)
 - **GitHub Docs, "Rate limits for the REST API"** — https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api (fetched 2026-08)
 - **GitHub CLI manual, `gh api`** — https://cli.github.com/manual/gh_api
+- **GitHub Docs, "REST API endpoints for check runs" (create response fields, `PATCH …/check-runs/{id}`)** — https://docs.github.com/en/rest/checks/runs (fetched 2026-08)
+- **`actions/github-script` README (current major version, `github`/`context` objects)** — https://github.com/actions/github-script (fetched 2026-08)
 
 ## 20. Appendix A — Code Index
 
 ### A.1 — Paginated Fetch With Truncation Handling (from Section 4)
 
 **What the code does:** Walks every page of a PR's changed-files list, stopping cleanly at
-GitHub's 300-file/3,000-line diff cap rather than assuming the list is complete.
+GitHub's 3,000-file cap on `/pulls/{n}/files` rather than assuming the list is complete.
 
 **ASCII flowchart:**
 
@@ -377,7 +443,7 @@ page = 1
 loop:
     fetch page N (per_page=100)
     accumulate files
-    if fewer than 100 returned OR total >= 300: stop, flag possible truncation
+    if fewer than 100 returned OR total >= 3000: stop, flag possible truncation
     else: page += 1
 ```
 

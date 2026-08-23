@@ -1,6 +1,6 @@
 # Chapter 09: The Event Model
 
-**Reading Time:** ~50 minutes
+**Reading Time:** ~55 minutes
 **Prerequisites:** Chapter 08 (Actions Anatomy)
 **Practice Notebook:** `notebooks/practice_09.ipynb`
 **Reference Notebook:** `notebooks/lab_09_event_matrix.ipynb`
@@ -121,6 +121,39 @@ doesn't have your repo's secrets available to leak, even if the workflow's own c
 them. This is why `pull_request` is the correct default for "run CI against this PR's code": the
 blast radius of a malicious PR is capped at "wasted compute," not "stolen secrets."
 
+### What the Event Actually Delivers
+
+When PR #101's author pushes a new commit to `fix/readme-typo`, GitHub fires a `pull_request`
+event with `"action": "synchronize"`. Trimmed to the fields this curriculum's gates actually
+read (fixture spine, PR #101):
+
+```json
+{
+  "action": "synchronize",
+  "number": 101,
+  "pull_request": {
+    "head": {
+      "ref": "fix/readme-typo",
+      "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736"
+    }
+  }
+}
+```
+
+**What to notice:**
+
+- `pull_request.head.sha` (`a1b2c3d4e5f6…`) is the PR's own tip — the exact SHA Gate 2 later
+  queries check runs for (`fixtures/check_runs_for_sha.json` carries the same value).
+- `github.sha` in a `pull_request`-triggered run is **not** this value — it's the last merge
+  commit on `refs/pull/101/merge`, the synthetic merge ref from Chapter 02 §13. When you mean
+  the PR's own tip, say `github.event.pull_request.head.sha` explicitly.
+- `"action": "synchronize"` is the push-to-an-open-PR case: a workflow declaring
+  `types: [opened, synchronize, reopened]` (this repo's `automerge.yml`) re-fires on every push.
+
 ## 4. `pull_request_target`: The Footgun
 
 `pull_request_target` looks almost identical in YAML but differs on the two axes that matter most:
@@ -141,7 +174,9 @@ The danger isn't the trigger alone — it's `pull_request_target` **plus** a ste
 checks out `github.event.pull_request.head.sha` while secrets are present. That combination runs
 untrusted, attacker-controlled code with your secrets attached. `pull_request_target` exists for a
 real purpose (labeling fork PRs, posting a comment as a privileged bot) — it's dangerous only when
-combined with checking out the PR's own code. Chapter 18 covers the safe patterns in full.
+combined with checking out the PR's own code. Chapter 18 covers the safe patterns in full, and its
+§6 gives the field-by-field taxonomy of which event-payload values (titles, bodies, branch names)
+are attacker-controlled and which are trustworthy.
 
 ## 5. `schedule`: Cron on the Default Branch Only
 
@@ -188,15 +223,53 @@ On a **second hop** — a `workflow_run` listening to another `workflow_run`-tri
 that field collapses to the default branch's SHA, because the second listener's own trigger
 context no longer traces cleanly back to the original PR.
 
+Traced with PR #101's spine values (head `a1b2c3d4e5f6…`, `main` at `0f1e2d3c4b5a…`):
+
 ```
-Workflow A (pull_request)         → head_sha = REAL PR SHA
+Workflow A: CI (pull_request, PR #101)     head_sha = a1b2c3d4e5f6…  (the PR's tip)
         │ completes
         ▼
-Workflow B (workflow_run off A)   → reads event.workflow_run.head_sha = still correct (hop 1)
+Workflow B (workflow_run off A)            reads event.workflow_run.head_sha
+                                             = a1b2c3d4e5f6…   ← hop 1: still the PR's tip
         │ completes
         ▼
-Workflow C (workflow_run off B)   → reads event.workflow_run.head_sha = COLLAPSED (hop 2!)
+Workflow C (workflow_run off B)            reads event.workflow_run.head_sha
+                                             = 0f1e2d3c4b5a…   ← hop 2: main's tip. COLLAPSED
 ```
+
+**What to notice:**
+
+- Hop 1's `head_sha` (`a1b2c3d4e5f6…`) equals `pull_request.head.sha` from Section 3's payload —
+  the chain of custody from the original event is still intact.
+- Hop 2's value (`0f1e2d3c4b5a…`) is a perfectly valid SHA — it's just the **wrong commit**
+  (`main`'s tip). Nothing errors; a check-run lookup against it silently returns the wrong runs.
+- In a real log, the collapse looks exactly like this: a SHA that matches no PR head. Recognizing
+  the default-branch SHA on sight is how Section 12's live bug was finally diagnosed.
+
+### The Hop-1 Payload, Trimmed
+
+What Gate 2 actually receives when CI finishes for PR #101 — the reliable, single-hop case:
+
+```json
+{
+  "action": "completed",
+  "workflow_run": {
+    "name": "CI",
+    "event": "pull_request",
+    "status": "completed",
+    "conclusion": "success",
+    "head_branch": "fix/readme-typo",
+    "head_sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+  }
+}
+```
+
+**What to notice:**
+
+- `conclusion` is the field Gate 2 reads for pass/fail; `head_sha` is how it finds *which* PR the
+  upstream run belonged to.
+- The listener itself runs in **default-branch context** — its own `github.sha` is `main`'s latest
+  commit, not the PR's. The PR's identity survives only inside `event.workflow_run.*`.
 
 This is Section 12's real-world case, not a hypothetical.
 
@@ -277,6 +350,20 @@ triggers it, and — using this chapter's vocabulary — whether it's the first 
 `workflow_run` chain. Confirm your trace matches Chapter 08 §13's table and this chapter's
 description of Gate 2 as the only single-hop `workflow_run` listener in the whole repo.
 
+**Expected output** — your trace should match this exactly:
+
+```
+workflow                 trigger(s)                         workflow_run hop?
+───────────────────────  ─────────────────────────────────  ──────────────────────────────
+ci.yml                   pull_request (sandbox/**),         no — the hop-0 source Gate 2
+                         workflow_dispatch                    listens to
+gate1-repo-health.yml    schedule (0 6 * * 1),              no — not in any chain
+                         workflow_dispatch
+gate2-pr-health.yml      workflow_run (off "CI")            YES — hop 1, the only one
+gate3-score.yml          pull_request (sandbox/**)          no
+automerge.yml            pull_request (sandbox/**)          no — direct by design (§12)
+```
+
 ## 16. Common Pitfalls & Misconceptions
 
 1. **"`pull_request` and `pull_request_target` are basically the same trigger with different
@@ -320,6 +407,7 @@ how expressions evaluate, and how `needs` passes data between jobs.
 ## 19. Additional Resources
 
 - **GitHub Docs, "Events that trigger workflows"** — https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows (fetched 2026-08)
+- **GitHub Docs, "Webhook events and payloads"** — https://docs.github.com/en/webhooks/webhook-events-and-payloads (fetched 2026-08) — field-level reference for the `pull_request` and `workflow_run` payload excerpts in §3 and §8
 - **GitHub Security Lab, "Keeping your GitHub Actions and workflows secure: Preventing pwn requests"** — https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/ (fetched 2026-08) — the canonical `pull_request_target` writeup
 - **This repo's own** [`resources/gha_event_reference.md`](../resources/gha_event_reference.md) — the full comparison matrix, verified against this repo's five real workflows
 

@@ -120,6 +120,34 @@ All four must hold for `PASS`; the rationale names every missing condition, not 
 — useful for a human reading the job summary to see the whole picture at once, not one failure at a
 time across several runs.
 
+### Worked Trace: the Fixture Repo Through Gate 1
+
+**State before** — what Gate 1's two `GITHUB_TOKEN` reads return for the fixture repo:
+
+| Condition | Read from | Field & value in the fixture | Verdict |
+| --- | --- | --- | --- |
+| `main_exists` | `fixtures/branch_light_status.json` (`repos/{repo}/branches/main`) | `"name": "main"` (call returned 200) | PASS |
+| `protection_configured` | same read | `"protected": true` | PASS |
+| `required_checks_registered` | no field of its own — mirrors `protection_configured` (Section 3) | — (a PAT *would* see `fixtures/branch_protection_full.json`'s `"contexts": ["test", "gate2-pr-health", "gate3-risk-score"]`) | PASS |
+| `auto_merge_enabled` | `fixtures/repo_settings.json` (`repos/{repo}`) | `"allow_auto_merge": true` | PASS |
+
+**Event:** `evaluate_gate1(main_exists=True, protection_configured=True,
+required_checks_registered=True, auto_merge_enabled=True)`
+
+**State after:** `GateResult` with status `PASS`, rationale
+`"main exists, protection configured, checks registered, auto-merge enabled"`.
+
+**What to notice:**
+
+- Flipping the *single* field `"protected": true` → `false` fails **two** conditions at once —
+  `required_checks_registered` has no field of its own and mirrors `protection_configured`.
+- Flipping `"allow_auto_merge": true` → `false` fails exactly one condition — and it's the one
+  Gate 1 would write back to `true` on its next run, because the write condition
+  (`main_exists and protection_configured`, Section 4) still holds.
+- The three required-check contexts really do exist in `fixtures/branch_protection_full.json`,
+  but Gate 1's token cannot read that endpoint (Section 3) — row three is honest mirroring, not
+  verification.
+
 ## 3. Reading Protection Status, the Chapter 05 Way
 
 Gate 1's real implementation reads `repos/{repo}/branches/main` — the **light** endpoint from
@@ -161,14 +189,30 @@ CLI-facing wrapper that fetches inputs and calls this exact engine function, mat
 
 ## 6. `readiness.json`: The Committed Badge
 
-Every Gate 1 run writes a small JSON file recording all four conditions plus the overall verdict:
+Every Gate 1 run writes a small JSON file recording all four conditions plus the overall verdict.
+For the fixture scenario traced in Section 2, this is the artifact byte-for-byte as
+`gate1-repo-health.yml`'s `json.dump(readiness, f, indent=2)` writes it:
 
 ```json
 {
-  "main_exists": true, "protection_configured": true,
-  "required_checks_registered": true, "auto_merge_enabled": true, "ready": true
+  "main_exists": true,
+  "protection_configured": true,
+  "required_checks_registered": true,
+  "auto_merge_enabled": true,
+  "ready": true
 }
 ```
+
+**What to notice:**
+
+- The first four keys record the Section 2 conditions one-for-one: `main_exists` and
+  `protection_configured` from the light branch read, `required_checks_registered` as its mirror,
+  `auto_merge_enabled` from the repo-settings read.
+- `ready` is not an independent fifth signal — the workflow computes it as `all()` of the other
+  four, in the same dict it then serializes.
+- That same dict drives the fail-closed exit: when `"ready": false`, the evaluate step exits 1,
+  which is what fires the regression issue (Section 11) — badge and verdict come from one source,
+  so they can never disagree.
 
 This is a durable, git-committed record of the *last* readiness check — useful as a quick status
 reference independent of digging through Actions run history.

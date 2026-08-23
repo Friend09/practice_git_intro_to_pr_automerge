@@ -52,7 +52,7 @@ OUTPUT_DIR: Path = Path(os.getenv("PRA_OUTPUT_DIR", "output"))
 #: GitHub's per-page cap for list endpoints, and the total-files cap on the
 #: paginated `/pulls/{n}/files` endpoint specifically (Chapter 04 §9).
 MAX_PAGE_SIZE: int = 100
-MAX_FILES_LISTED: int = 300
+MAX_FILES_LISTED: int = 3000
 
 
 # ---------------------------------------------------------------------------

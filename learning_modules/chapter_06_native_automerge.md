@@ -1,6 +1,6 @@
 # Chapter 06: Native Auto-Merge vs Your Own Merge Call
 
-**Reading Time:** ~50 minutes
+**Reading Time:** ~55 minutes
 **Prerequisites:** Chapter 05 (Branch Protection & Rulesets)
 **Practice Notebook:** `notebooks/practice_06.ipynb`
 **Reference Notebook:** `notebooks/lab_06_merge_modes.ipynb`
@@ -143,6 +143,48 @@ enable auto-merge  →  PR sits in "auto-merge enabled" state
                   GitHub performs the merge
 ```
 
+### The Lifecycle in Fixture Data: PR #101, Enrolled Then Merged
+
+**State at enrollment** (authored on the fixture spine — the fixture captures only the final
+state). Checks are still running, so GitHub reports the PR blocked:
+
+```json
+{
+  "number": 101,
+  "state": "open",
+  "merged": false,
+  "mergeable_state": "blocked",
+  "head": { "ref": "fix/readme-typo", "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" }
+}
+```
+
+**Event:** the required gate checks report success. Nobody issues another command.
+
+**State after GitHub merges** — trimmed verbatim from `fixtures/pr_merged_example.json`:
+
+```json
+{
+  "number": 101,
+  "state": "closed",
+  "merged": true,
+  "merged_at": "2026-08-15T14:32:07Z",
+  "merge_commit_sha": "7c4a9e8d13ad1e0c9a18bd5e2f4b6789012cdef3",
+  "mergeable_state": "clean",
+  "head": { "ref": "fix/readme-typo", "sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" }
+}
+```
+
+**What to notice:**
+
+- Enrollment changed *nothing* above: `state` still `open`, `merged` still `false` —
+  enrollment is not merging. `"blocked"` mirrors GraphQL's `MergeStateStatus: BLOCKED`
+  ("the merge is blocked"), here by unmet required checks.
+- `merge_commit_sha` `7c4a9e8d…` is a **new SHA**, not head `a1b2c3d4…` — GitHub manufactured
+  the squash commit at merge time (Chapter 03: a merge produces a commit the source branch
+  never contained).
+- `head.sha` is byte-identical in both states — neither enrollment nor the merge touches the
+  PR branch.
+
 ## 4. Direct Merge: What It Actually Does
 
 A direct call to the merge endpoint evaluates the PR's mergeability **at that instant** and, if
@@ -202,6 +244,39 @@ gh pr merge 42 --repo owner/name --auto --squash
 - `--squash` — which merge strategy to use *once* GitHub actually performs the merge (Chapter 03).
 - Exit code and stdout tell you whether the *enrollment* succeeded — not whether the PR has
   merged. A successful `gh pr merge --auto` can leave a PR open for hours if checks are slow.
+
+### What Success and Failure Actually Look Like
+
+**Before:** PR #101 open, `mergeable_state: "blocked"` (Section 3), repo `allow_auto_merge` on.
+
+```console
+$ gh pr merge 101 --auto --squash
+✓ Pull request <you>/practice_git_intro_to_pr_automerge#101 will be automatically merged via squash when all requirements are met
+$ echo $?
+0
+```
+
+**Contrast — same command, but the repo's `allow_auto_merge` setting is off:**
+
+```console
+$ gh pr merge 101 --auto --squash
+GraphQL: Auto merge is not allowed for this repository (enablePullRequestAutoMerge)
+$ echo $?
+1
+```
+
+**What to notice:**
+
+- Exit `0` proves **enrollment**, nothing more — "will be automatically merged" is future
+  tense. PR #101 is still open after this command returns.
+- The ✓ line goes to **stderr**, and only when attached to a terminal (per gh 2.98.0's
+  source). Inside an Actions job — no TTY — success prints nothing at all: the exit code is
+  the only signal, which is why `automerge.yml` branches on `if gh pr merge …; then` instead
+  of parsing output text.
+- Failure is loud and non-zero (`gh help exit-codes`: `0` = success, `1` = any failure). The
+  wording varies by cause; the stable contract is a `GraphQL: … (enablePullRequestAutoMerge)`
+  line — same shape as Section 9's token-refusal error — plus exit `1`. A refused enrollment
+  never falls back to merging.
 
 ## 9. ⚠️ ADVANCED: The GraphQL Mutation Underneath
 
@@ -284,6 +359,35 @@ Against the sandbox repo: open a PR with a failing check, then run `gh pr merge 
 the check and watch the PR merge itself with no further action from you. This one experiment is
 worth more than the rest of the chapter combined.
 
+While it waits, `gh pr view 101 --json autoMergeRequest` is your proof of enrollment (trimmed;
+field names per gh 2.98.0):
+
+```json
+{
+  "autoMergeRequest": {
+    "enabledAt": "2026-08-15T14:05:11Z",
+    "enabledBy": { "login": "<you>" },
+    "mergeMethod": "SQUASH",
+    "commitHeadline": null,
+    "commitBody": null
+  }
+}
+```
+
+After the merge completes — or if enrollment never happened — the same query returns:
+
+```json
+{ "autoMergeRequest": null }
+```
+
+**What to notice:**
+
+- A non-null `autoMergeRequest` is the queued-state artifact: `mergeMethod: "SQUASH"` was
+  locked in at enrollment (`enabledAt` 14:05:11Z — about 27 minutes before the fixture's
+  `merged_at` of 14:32:07Z in Section 3).
+- `null` is ambiguous on its own — already merged, or never enrolled? Pair it with Section 3's
+  `merged` / `merge_commit_sha` fields to tell which story you're in.
+
 ## 16. Common Pitfalls & Misconceptions
 
 1. **"`--auto` just makes the merge happen faster."** No — it changes *when* and *whether* it
@@ -328,6 +432,8 @@ minting the PAT this chapter's Section 9 needed.
 - **GitHub Docs, "Automatically merging a pull request"** — https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request (fetched 2026-08)
 - **GitHub REST API, "Merge a pull request"** — https://docs.github.com/en/rest/pulls/pulls#merge-a-pull-request (fetched 2026-08)
 - **GitHub Changelog, "Enabling and disabling auto-merge for pull requests"** — background on the feature's rollout
+- **gh CLI source: `pr merge` output strings & `AutoMergeRequest` JSON fields** — https://github.com/cli/cli/blob/trunk/pkg/cmd/pr/merge/merge.go and https://github.com/cli/cli/blob/trunk/api/queries_pr.go (fetched 2026-08; cross-checked locally against gh 2.98.0 `gh pr merge --help`, `gh pr view --json`, and `gh help exit-codes`)
+- **GitHub GraphQL API, `MergeStateStatus` enum** — https://docs.github.com/en/graphql/reference/enums#mergestatestatus (fetched 2026-08; REST's `mergeable_state` is its lowercase mirror)
 
 ## 20. Appendix A — Code Index
 

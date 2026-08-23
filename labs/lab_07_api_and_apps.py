@@ -50,8 +50,8 @@ OUTPUT_DIR: Path = Path(os.getenv("PRA_OUTPUT_DIR", "output"))
 #: GitHub's page size ceiling for list endpoints when requesting the maximum.
 MAX_PAGE_SIZE: int = 100
 
-#: GitHub's hard cap on files returned for a single PR's diff (Chapter 07 §4).
-FILE_COUNT_TRUNCATION_LIMIT: int = 300
+#: GitHub's hard cap on files returned by `/pulls/{n}/files` (Chapter 07 §4).
+FILE_COUNT_TRUNCATION_LIMIT: int = 3000
 
 
 # ---------------------------------------------------------------------------

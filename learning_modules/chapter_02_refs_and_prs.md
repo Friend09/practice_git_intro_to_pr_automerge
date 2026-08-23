@@ -1,6 +1,6 @@
 # Chapter 02: Refs, Branches & What a PR Really Is
 
-**Reading Time:** ~45 minutes
+**Reading Time:** ~50 minutes
 **Prerequisites:** Chapter 01 (the Airlock Principle)
 **Practice Notebook:** `notebooks/practice_02.ipynb`
 **Reference Notebook:** `notebooks/lab_02_pr_refs.ipynb`
@@ -124,6 +124,37 @@ Nothing about this is GitHub-specific — it's how local Git has always worked. 
 is built entirely out of more refs, following the exact same mechanism, just under a different
 top-level path (`refs/pull/` instead of `refs/heads/`).
 
+### Tracing the Pointer Chain: HEAD → Branch File → Commit
+
+You can watch the whole mechanism with `cat`. Real output from a throwaway demo repo with one
+commit on `main` (your SHAs will differ — these are not the PR #101 fixture SHAs):
+
+**Before — one commit on `main`:**
+
+```
+$ cat .git/HEAD
+ref: refs/heads/main
+$ cat .git/refs/heads/main
+05f66f55c99ac07dc9b1429bfa05c7bb159b45e4
+```
+
+**After — one more commit (`git commit -m "second commit"`):**
+
+```
+$ cat .git/HEAD
+ref: refs/heads/main
+$ cat .git/refs/heads/main
+df294d814bf6329218d2515d47f1b092bca2a5f7
+```
+
+**What to notice:**
+
+- `HEAD` is a pointer *to a pointer*: it holds the text `ref: refs/heads/main`, not a SHA.
+- The commit moved **only** the branch file's SHA (`05f66f5…` → `df294d8…`). `HEAD` is
+  byte-for-byte unchanged — the indirection is what lets "the current branch" advance.
+- This two-hop chain (`HEAD` → branch file → commit) is the entire mechanism Section 3's
+  `refs/pull/101/head` reuses; GitHub just writes the pointer file for you.
+
 ## 3. Two Refs Per Open PR
 
 The moment a PR is opened, GitHub creates — and continuously maintains — exactly two refs on the
@@ -191,6 +222,24 @@ from asking for them explicitly — no GitHub-specific tool required:
 ```bash
 git ls-remote https://github.com/<owner>/<repo>.git 'refs/pull/*'
 ```
+
+Against a repo with PRs #101 and #102 open, that prints exactly this (canned verbatim as
+`fixtures/git_refs_sample.json`, which `labs/lab_02_pr_refs.py` loads in fixture mode):
+
+```
+a1b2c3d4e5f60718293a4b5c6d7e8f9012345678	refs/pull/101/head
+9182736450f1e2d3c4b5a69788796a5b4c3d2e1	refs/pull/101/merge
+5a69788796a5b4c3d2e1f009182736450f1e2d3	refs/pull/102/head
+c3d2e1f009182736450f1e2d3c4b5a69788796a	refs/pull/102/merge
+```
+
+**What to notice:**
+
+- Each PR contributes exactly **two** lines — the raw `sha<TAB>ref` pairs Appendix A.1 parses.
+- `a1b2c3d4e5f6…` on `refs/pull/101/head` is the same SHA the PR object reports as
+  `head.sha`/`headRefOid` (Section 7's diagram, Section 15's project) — two views, one fact.
+- `9182736…` on `refs/pull/101/merge` is the synthetic merge commit from Section 5. You will not
+  find it in any branch's `git log` — it exists only behind this ref.
 
 This lists every open PR's `head` and `merge` refs and their current SHAs, using plain Git —
 `ls-remote` just asks the remote to list its refs, and PR refs are refs like any other. You could
@@ -316,6 +365,32 @@ Reading PR refs at the Git level -- no GitHub token required
 Every one of these works against a **public** repo with zero authentication — a useful fact when
 you only need a SHA and don't want to spend an API rate-limit call on it.
 
+### Detached HEAD: Checking Out a SHA Instead of a Branch
+
+`git checkout <sha>` (e.g. of a fetched PR head) performs three state mutations: (1) `HEAD` is
+pointed **directly at the commit**, not at a branch file; (2) the staging area is populated from
+that commit; (3) the working directory is updated to match. Only mutation 1 differs from a normal
+branch switch — and it's exactly the pointer chain from Section 2 with the middle hop removed.
+Git warns you immediately (real output, git 2.55.0, trimmed):
+
+```
+$ git checkout 05f66f55c99ac07dc9b1429bfa05c7bb159b45e4
+Note: switching to '05f66f55c99ac07dc9b1429bfa05c7bb159b45e4'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+...
+$ cat .git/HEAD
+05f66f55c99ac07dc9b1429bfa05c7bb159b45e4
+```
+
+`.git/HEAD` now holds a raw SHA instead of `ref: refs/heads/main` — that *is* the detachment.
+Two nearby terms are often conflated: a **remote-tracking branch** (`origin/main`) is your local,
+read-only cache of where the remote's `main` was at last fetch, while an **upstream branch** is
+the configured push/pull target for a local branch — `git branch -vv` shows it in brackets,
+e.g. `main df294d8 [origin/main] second commit`.
+
 ## 15. Your First Project: List the Refs, Then Fetch the Object
 
 Run this against this curriculum's own sandbox repo (or any public repo with open PRs):
@@ -328,6 +403,8 @@ gh pr view <N> --repo <owner>/<repo> --json headRefOid,baseRefOid,mergeable,merg
 Confirm the `headRefOid` from the second command matches the `refs/pull/<N>/head` SHA from the
 first. That equality — computed two completely different ways — is the concrete proof that the PR
 object and the raw ref are two views of the same underlying fact, not two unrelated systems.
+The expected shape is Section 6's fixture listing: for PR #101 both commands must yield
+`a1b2c3d4e5f60718293a4b5c6d7e8f9012345678`.
 
 ## 16. Common Pitfalls & Misconceptions
 

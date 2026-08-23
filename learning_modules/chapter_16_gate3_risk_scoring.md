@@ -114,6 +114,10 @@ simplification, not an oversight (Section 11 revisits it).
 
 ## 3. The Formula
 
+In plain English: every 100 lines changed contributes 30 points; every 5 files touched contributes
+25 points; every critical-path file touched contributes 45 points, flat, per file. There is no
+upper bound on the formula itself — that's what Section 5's ceiling is for.
+
 ```python
 RISK_WEIGHTS = {"lines": 30.0, "files": 25.0, "critical_paths": 45.0}
 DEFAULT_THRESHOLD = 70.0
@@ -124,9 +128,20 @@ risk = (lines_changed / 100.0) * W["lines"] \
      + critical_path_hits      * W["critical_paths"]
 ```
 
-In plain English: every 100 lines changed contributes 30 points; every 5 files touched contributes
-25 points; every critical-path file touched contributes 45 points, flat, per file. There is no
-upper bound on the formula itself — that's what Section 5's ceiling is for.
+Numerical example — Section 8's "small feature" PR (the same one Section 2's `PRMetadata`
+shows): 120 lines changed (100 additions + 20 deletions), 6 files, 0 critical-path hits:
+
+```
+risk = (120/100) * 30.0  +  (6/5) * 25.0  +  0 * 45.0
+     =   36.0            +   30.0         +  0.0        =  66.0  ≤ 70.0 → auto-merge
+```
+
+**What to notice:**
+
+- The lines and files terms are *rates* (per 100 lines, per 5 files); the critical-path term is
+  flat per file — one workflow file would have added 45.0 on its own.
+- 66.0 sits 4 points under threshold — the exact `(100, 20, 6, 0) → 66.0` case pinned in
+  `tests/test_scoring.py`.
 
 ## 4. Reading the Formula, Piece by Piece
 
@@ -150,6 +165,20 @@ if lines_changed > HARD_CEILING_LINES:
 No score, however low, overrides this. It is deliberately the one rule in this chapter that is not
 a weighted contribution to a formula — it's a blocker, structurally identical in kind to "did CI
 pass" from Gate 2.
+
+Concretely: at the default threshold of 70 the ceiling never decides alone — the lines term,
+`(lines / 100) × 30`, reaches 70 by itself at 234 lines, so any ceiling-size PR has already
+failed on score (the engine still checks the ceiling *first* — see the A.1 flowchart). But once
+Chapter 19 loosens the threshold — say to 200.0, the exact value
+`test_lowering_threshold_can_flip_a_borderline_pr` pins in `tests/test_scoring.py` — the ceiling
+is the only defense left. A 600-line, single-file, zero-critical-path vendored-dependency bump:
+
+```
+risk  = (600/100) * 30.0 + (1/5) * 25.0 + 0 * 45.0 = 185.0  ≤ 200.0 → score says merge
+lines = 600 > HARD_CEILING_LINES (500)                              → verdict: HOLD
+```
+
+The score passes; the PR still holds — the ceiling doing its one job.
 
 ## 6. The Merge Decision
 

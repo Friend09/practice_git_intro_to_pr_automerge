@@ -1,6 +1,6 @@
 # Chapter 17: Wiring the Airlock
 
-**Reading Time:** ~50 minutes
+**Reading Time:** ~55 minutes
 **Prerequisites:** Chapter 06, Chapter 14, Chapter 15, Chapter 16
 **Practice Notebook:** `notebooks/practice_17.ipynb`
 **Reference Notebook:** `notebooks/lab_17_airlock.ipynb`
@@ -136,27 +136,84 @@ That's the entire logic. It runs on every PR open/update event, enrolls the PR i
 auto-merge, and then does nothing else — GitHub's own required-check enforcement (Section 2)
 handles literally everything about *when* the actual merge is allowed to happen.
 
+### Concurrency: When Push B Lands While Push A's Gates Are Still Running
+
+"On every PR open/update event" hides a race. **State before:** PR #101's head is
+`a1b2c3d4e5f6…` (push A, version vA); Gate 3's run for vA is `in_progress`. **Event:** 20
+seconds later, push B moves the head to `b2c3d4e5f6a7…` (vB) — a `pull_request` `synchronize`
+event starts a second Gate 3 run. **State after, WITHOUT `concurrency:`** (this repo today):
+both runs execute to completion, and run A publishes its check on the now-outdated SHA
+`a1b2c3d4e5f6…`. Here that's merely wasteful — these gates capture the head SHA from their own
+triggering event, and branch protection only evaluates checks on the *current* head (Section 4)
+— but a gate that instead queried "the PR's current head" at completion time could stamp vB's
+fresh SHA with a verdict computed against vA's diff. One `concurrency` block per gate workflow
+closes the race:
+
+```yaml
+concurrency:
+  group: gates-${{ github.event.pull_request.number }}   # "gates-101"
+  cancel-in-progress: true
+```
+
+**State after, WITH `concurrency:`** — push B's run cancels push A's mid-flight:
+
+```
+$ gh run list --workflow=gate3-score.yml --limit 2
+in_progress  -          Gate 3 — Risk Score  fix/readme-typo   (run B — head b2c3d4e5f6a7…)
+completed    cancelled  Gate 3 — Risk Score  fix/readme-typo   (run A — head a1b2c3d4e5f6…)
+```
+
+**What to notice:**
+
+- **The group key ties to the PR number**, so the group is `gates-101`: pushes to PR #101 cancel
+  only each other, never another PR's runs. The `github` context is one of the contexts allowed
+  in a `concurrency` group expression, and GitHub keeps at most one run *pending* per group.
+- **`cancelled` is not a passing conclusion.** Branch protection counts only `success`,
+  `skipped`, and `neutral` as passing — so run A's cancelled required check can never
+  accidentally satisfy the check list. The airlock fails closed; only run B's fresh verdict on
+  `b2c3d4e5f6a7…` can open the door.
+- **Honestly: none of this repo's five live workflows uses `concurrency:` today.** The sandbox
+  generates single-push throwaway PRs, so the race window is rarely hit — but it's the first
+  hardening you'd add before pointing this airlock at real multi-push traffic.
+
 ## 4. The Full Picture, End to End
 
 ```
-PR opens/updates against sandbox/**
+PR #101 opens/updates against sandbox/**
+(head SHA a1b2c3d4e5f6… — every check below attaches to THIS commit)
         │
-        ├──▶ ci.yml runs (test job)
+        ├──▶ ci.yml runs (test job)                          on a1b2c3d4e5f6…
         │         │
-        │         └──▶ gate2-pr-health.yml (workflow_run off CI) publishes "gate2-pr-health"
+        │         └──▶ gate2-pr-health.yml (workflow_run off CI)
+        │              publishes "gate2-pr-health"           on a1b2c3d4e5f6…
+        │              (reads github.event.workflow_run.head_sha)
         │
-        ├──▶ gate3-score.yml (pull_request) publishes "gate3-risk-score" + PR comment
+        ├──▶ gate3-score.yml (pull_request)
+        │    publishes "gate3-risk-score" + PR comment       on a1b2c3d4e5f6…
+        │    (reads github.event.pull_request.head.sha)
         │
-        └──▶ automerge.yml (pull_request) calls gh pr merge --auto --squash
+        └──▶ automerge.yml (pull_request) calls gh pr merge 101 --auto --squash
                     │
                     ▼
         branch protection watches: test, gate2-pr-health, gate3-risk-score
+        — all evaluated against the CURRENT head, a1b2c3d4e5f6…
                     │
               all three == success?
                     │yes
                     ▼
-        GitHub performs the merge (native auto-merge, Chapter 06)
+        GitHub merges a1b2c3d4e5f6… into main (base 0f1e2d3c4b5a…)
 ```
+
+**What to notice:**
+
+- **The same head SHA appears at every stage.** Three independently-triggered workflows converge
+  on one commit — not by coordinating, but because each extracts the SHA from its own event
+  payload. Two different context paths (`workflow_run.head_sha` vs `pull_request.head.sha`), one
+  value: `a1b2c3d4e5f6…`.
+- **Gate 2 gets the SHA second-hand** — via `workflow_run.head_sha`, reliable exactly one hop off
+  the original `pull_request` event. Section 10 is the story of what happens at hop two.
+- **Branch protection's question is per-commit,** not per-PR: "do all three required checks report
+  success *on the current head* `a1b2c3d4e5f6…`?" Checks stamped on an older head don't count.
 
 Gate 1 runs independently on its own weekly schedule, enforcing `allow_auto_merge` at the repo
 level the whole time this is happening (Section 5).
@@ -233,6 +290,32 @@ that name to `required_status_checks.contexts`. `automerge.yml` needs **zero** c
 just calls `gh pr merge --auto --squash`, and GitHub's own enforcement now waits on four checks
 instead of three. This is the concrete payoff of composing through native mechanisms instead of a
 custom recomputation (Section 10): the design scales without touching the composing code at all.
+
+### The Native Fourth Gate That Already Exists: An Environment as a Manually Operated Door
+
+Every door in this airlock so far opens on a verified *sensor* — a check turning green. GitHub
+ships one more native door type: a **deployment environment with required reviewers**, which
+opens only when a *human turns the wheel*. Configure an environment (say, `production-merge`)
+with up to 6 required reviewers, then point a gate job at it:
+
+```yaml
+jobs:
+  final-door:
+    runs-on: ubuntu-latest
+    environment: production-merge   # environment has required reviewers configured
+```
+
+**State before:** PR #101's three automated checks are green. **Event:** the `final-door` job
+reaches the runner queue and hits its `environment:` reference. **State after:** the run pauses
+— the job shows **"Waiting for review"**, the designated reviewers get an email, and nothing
+proceeds until one of them (only one approval is needed) approves in the run's UI. On approval
+the job resumes, finishes, and its check goes green like any other required check.
+
+**What to notice:** this is the entire "human in the loop" feature — pause, notify, approve,
+audit trail in the deployment history — with zero custom code. Building the same thing yourself
+(a `/approve`-comment-parsing bot, a label check) means re-implementing all four of those pieces.
+One caveat: on private repos, environment protection rules require a paid plan (they're free on
+public repos), which is exactly the kind of platform precondition Gate 1 exists to verify.
 
 ## 10. ⚠️ ADVANCED: The Abandoned `workflow_run`-Chaining Design
 
@@ -347,6 +430,9 @@ once contributors you don't fully trust start opening PRs.
 - **This repo's own** `notes/IMPROVEMENTS_SUMMARY.md` — the Live-Repo Verification Log, discovery #4 (the `workflow_run` chaining bug)
 - **GitHub Docs, "About protected branches"** — https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches (fetched 2026-08)
 - **GitHub Docs, "Automatically merging a pull request"** — https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request (fetched 2026-08)
+- **GitHub Docs, "Control workflow concurrency"** — https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency (fetched 2026-08) — `concurrency` group semantics, `cancel-in-progress`, allowed contexts, one-pending-run-per-group rule (Section 3)
+- **GitHub Docs, "Troubleshooting required status checks"** — https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks (fetched 2026-08) — passing conclusions are `success`, `skipped`, `neutral`; a cancelled check does not satisfy a required check (Section 3)
+- **GitHub Docs, "Manage environments for deployment"** — https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments (fetched 2026-08) — required reviewers (up to 6, one approval unblocks), wait timers, plan availability (Section 9)
 
 ## 20. Appendix A — Code Index
 

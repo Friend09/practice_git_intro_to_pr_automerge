@@ -34,6 +34,99 @@ forward backlog.
 
 ## Batch Update Log
 
+**2026-08-23 — Depth retrofit Batch 4 + 3,000-file-cap correction (Chapters 00–08; initiative
+complete).** Backfill of the chapters behind the reader's position, all in the Worked Trace
+pattern, with git output captured from throwaway scratchpad repos (never authored): Ch 00 walks
+one file untracked→staged→committed→modified with real `git status`/`git diff` at each stop
+(vA/vB labels embedded in the file content so they appear in actual diffs) plus the
+add-copies-not-moves proof and an Actions run view for §11. Ch 01 finally shows the fail-open
+bug numerically: two tables where a failing blocker's missing signal inflates the prior-art
+score 0.50 → 1.00, plus Ch 16 forward refs (5.9, 510.0). Ch 02: real `ls-remote` output from
+`fixtures/git_refs_sample.json`, HEAD→branch-file pointer trace, detached-HEAD subsection.
+Ch 03: full merge-conflict anatomy with the captured "still merging" intermediate state,
+rebase replay decomposition + Golden Rule, and the doc-verified non-fast-forward PR-merge
+default. Ch 04: the marquee fixture→`PRMetadata` worked trace, camelCase-vs-snake_case shown
+side by side, real `Link` header + page math. Ch 05: light-vs-full protection reads side by
+side from fixtures. Ch 06: auto-merge lifecycle in fixture data, real `gh pr merge --auto`
+output verified against the gh CLI source (success line is stderr and TTY-only — in Actions
+the exit code is the only signal), and the `autoMergeRequest` artifact. Ch 07: `--jq` output
+trace, 3-row rate-limit table (App-token scaling verified), check-run response excerpt
+cross-linked to Ch 12, `actions/github-script@v9` subsection. Ch 08: the real `ci.yml` quoted
+line-numbered with per-block commentary (full listing in new Appendix A.2), runners deepened
+(images, labels, JIT), matrix worked 3×2→6-job expansion.
+
+**Major factual correction found by the fact-check protocol:** the repo-wide claim of a
+"300-file cap" on `GET /pulls/{n}/files` is wrong — current GitHub docs give that endpoint a
+**3,000-file** maximum; the 300-file limit belongs to the *compare-two-commits* endpoint.
+Corrected across 7 files: Ch 04 (incl. the §8 heading rename with ToC anchor synced, and the
+§12 case study rescaled to a 3,340-file PR with the critical hit at #3,012), Ch 07 §4/A.1
+pseudocode, `labs/lab_04_pr_data.py` (`MAX_FILES_LISTED = 3000`), `labs/lab_07_api_and_apps.py`
+(`FILE_COUNT_TRUNCATION_LIMIT = 3000`), the instructions file's concrete-numbers rule, and the
+Ch 04 notebook pair (markdown synced byte-identically; reference notebook re-executed so its
+output prints 3000). The compare-endpoint 300 is kept as an explicit contrast with dated
+citations. Tests after everything: 158 passed, 2 skipped; both labs run clean in fixture mode.
+
+**2026-08-23 — Depth retrofit Batch 3 (Chapters 19–23, +330 lines).** Ch 19 (verification
+pass): zero numeric drift in the 5×5 sweep table; fixed two stale "Ch 16 §7" ceiling
+citations to §5; What-to-notice bullets added (the 172.0 refactor is threshold-bound, flipping
+at 200.0). Ch 20: the semantic conflict is now a concrete spot-the-diff (PR #201 adds a flag,
+PR #202 removes its fallback, both green alone, combined file broken), and §4 shows literal
+`gh-readonly-queue/main/...` speculative refs — the documented prefix cited, the `pr-N-<sha>`
+suffix honestly labeled observed convention; `merge_group`/`checks_requested` trigger cited.
+Ch 21: custom-action flavors table (5-axis vocabulary; node20/node24, not Node 16), an 18-line
+`action.yml` traced end-to-end (noting action inputs are untyped strings — only `workflow_call`
+has types), the gate2/gate3 duplicated steps quoted verbatim, and required workflows described
+via the CURRENT mechanism (repository rulesets, with the 2023 migration history and honest
+plan-availability caveats); 8 dated citations. Ch 22 (verification pass): §3's drifted table
+replaced with a compliant 5-axis table + feature-facts matrix; §6's build=0/buy=4 made
+derivable (Team B's budget input was unstated — the one inconsistency found); noted no single
+input flips either verdict. Ch 23: §7 now shows the verbatim `explain_decision()` output
+captured from a real fixture-mode lab run (PR #301 MERGED, risk 5.9; PR #302 HELD on the
+hard ceiling), §6 shows a real `audit_log.jsonl` line, §15 gained expected output. Note: a
+mid-batch session interruption left some edits staged by a hook; all resumed cleanly (use
+`git diff HEAD` to see the full delta). Tests: 158 passed, 2 skipped.
+
+**2026-08-23 — Depth retrofit Batch 2 (Chapters 14–18, +333 lines).** Ch 14: the four Gate 1
+conditions became an input→result table reading exact fixture fields, and `readiness.json` is
+now shown byte-for-byte as `gate1-repo-health.yml` writes it. Ch 15: the fail-closed contract
+became a 7-row conclusion→GateResult table with character-exact rationale strings from
+`evaluate_gate2`, plus a fixture→gate→`gate_table` end-to-end trace captured from a real
+fixture-mode lab run. Ch 16 (verification pass): zero numeric drift vs `test_scoring.py`;
+gained the pre-formula plain-English line + 66.0 worked arithmetic, and a ceiling bracket —
+notable discovery: at threshold 70 no PR over 234 lines can score under threshold, so the
+under-threshold/over-ceiling demo correctly uses the test-pinned recalibrated threshold 200.0.
+Ch 17: new concurrency-race subsection (push A cancelled by push B via
+`concurrency: gates-<PR#>`, honestly noting none of the five live workflows uses
+`concurrency:` today) and environments-as-human-approval-gate subsection; PR #101 spine SHAs
+threaded through the §4 fan-out. Ch 18: §15.1 spot-the-diff exercise (3-token malicious
+delta), §6 expanded into the canonical trusted/untrusted taxonomy (where Ch 09 §4 now
+points), CODEOWNERS-owns-workflows checklist item with the requests-vs-requires caveat.
+All new claims carry `(fetched 2026-08)` doc URLs. Tests: 158 passed, 2 skipped.
+
+**2026-08-23 — Depth retrofit Batch 0 + Batch 1 (Worked Trace pattern; Chapters 09–13).**
+Gap analysis against two O'Reilly books (*Learning Git*, Skoulikari; *Learning GitHub
+Actions*, Laster) found chapters used structural diagrams but rarely transformational
+worked examples (input → command → exact output), with concrete data systematically
+deferred to labs. Batch 0: codified the six-device **Worked Trace pattern** as a new
+"Depth Standard" section in `.github/instructions/chapter-content.instructions.md`, and
+fixed a factual error — `GITHUB_TOKEN` in Actions gets 1,000 req/hr per repository, not
+5,000 (corrected in Ch 04 §11 and the instructions file; dated docs URL added to Ch 04
+§19; Ch 07 §5 was already right). Batch 1 (Ch 09–13, +~490 lines): Ch 09 gained its
+first-ever event payload JSON (spine-consistent `pull_request` and `workflow_run`
+excerpts) and literal SHAs in the two-hop collapse diagram; Ch 10 gained the 66.0
+output-plumbing trace in three increments, an `always()`-on-cancel subsection, a verbatim
+`##[debug]` engine trace, and the new artifacts-vs-caches-vs-outputs home (current majors
+verified: `cache@v6`, `upload-artifact@v7`, `download-artifact@v8`); Ch 11 gained
+token-lifetime facts (6 h hosted / 24 h self-hosted-refresh, doc-verified), a worked 403
+scope-missing trace, and the fork-PR approval-settings subsection ("external
+contributors" is the current name); Ch 12 inlined both check-run fixtures with the
+Ch 05 name-match link made explicit; Ch 13 gained one shown symptom per diagnostic check
+(§4–§8), debug-logging + log-archive subsection (archive tree taken from a real
+downloaded Gate 1 run — the 2026 layout differs from the 2023 book), and status-badge /
+version-to-run mapping. All new behavioral claims carry `(fetched 2026-08)` doc URLs.
+Tests: 158 passed, 2 skipped; no section renumbering; no notebook/lab changes needed.
+Batches 2–4 (Ch 14–18, 19–23, backfill 00–08) remain — see the tracker's IN PROGRESS entry.
+
 **2026-08-21 — Initial build.** Scaffolded the repo per `proj_ml_intro_to_ml`'s own
 `learning-repo-setup` skill blueprint: directory skeleton, four
 `.github/instructions/*.instructions.md` format contracts, `CLAUDE.md`, `README.md`,

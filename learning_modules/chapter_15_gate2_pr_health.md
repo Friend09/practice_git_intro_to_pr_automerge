@@ -1,6 +1,6 @@
 # Chapter 15: Gate 2 — PR Health
 
-**Reading Time:** ~45 minutes
+**Reading Time:** ~50 minutes
 **Prerequisites:** Chapter 12 (Status Checks), Chapter 08 (Actions Anatomy)
 **Practice Notebook:** `notebooks/practice_15.ipynb`
 **Reference Notebook:** `notebooks/lab_15_pr_health.ipynb`
@@ -116,6 +116,37 @@ meaning no CI result has been published yet — fails, identically to an explici
 Chapter 01's Airlock Principle rendered as the simplest possible function: one condition for pass,
 everything else falls through to the same fail path.
 
+### The Contract as a Table: Every Input → Its Exact `GateResult`
+
+Here is the whole contract, one row per arriving `conclusion` value (the full vocabulary is
+Section 9's), showing exactly what `pr_automerge.gates.evaluate_gate2` returns. The `gate` field
+is always `"gate2_pr_health"`; the rationale strings below are character-exact — the FAIL branch
+builds them with Python's `!r` repr, which is where the single quotes come from:
+
+| `ci_conclusion` input | `status` | `.passed` | `rationale` (exact string produced) |
+| --------------------- | -------- | --------- | ------------------------------------ |
+| `"success"` | `PASS` | `True` | `CI conclusion is 'success'` |
+| `"failure"` | `FAIL` | `False` | `CI conclusion is 'failure' — fail-closed` |
+| `"cancelled"` | `FAIL` | `False` | `CI conclusion is 'cancelled' — fail-closed` |
+| `"timed_out"` | `FAIL` | `False` | `CI conclusion is 'timed_out' — fail-closed` |
+| `"skipped"` | `FAIL` | `False` | `CI conclusion is 'skipped' — fail-closed` |
+| `"action_required"` | `FAIL` | `False` | `CI conclusion is 'action_required' — fail-closed` |
+| `None` (nothing reported) | `FAIL` | `False` | `no CI conclusion found yet — fail-closed` |
+
+**What to notice:**
+
+- Exactly one row passes. Every FAIL rationale ends in `— fail-closed`, so the *reason* the door
+  stayed shut is visible in every job summary and check-run output Gate 2 produces.
+- The `None` row **is** the fail-closed inversion. Under the prior-art POC's skip-on-missing model
+  (Section 10), this row would read "removed from scoring — does not block": a missing blocker
+  signal would leave auto-approval standing. Here it's `FAIL`, indistinguishable in effect from an
+  explicit `"failure"`.
+- `GateStatus.SKIP` exists in the enum (`pr_automerge/models.py`) — but `evaluate_gate2` never
+  emits it. No input reaches a `SKIP` output; that's Section 17's "no skip state" claim, proven at
+  the code level.
+- The `None` row is pinned by `tests/test_gates.py::test_gate2_fails_closed_on_missing_conclusion`,
+  which asserts both `not result.passed` and `"fail-closed" in result.rationale`.
+
 ## 3. Why `workflow_run` Off CI, Not `pull_request` Directly
 
 If Gate 2 triggered directly on `pull_request`, it would need to somehow *wait* for CI to finish
@@ -155,6 +186,52 @@ its own inline logic (Chapter 14 §5). This means Gate 2's actual behavior *is* 
 `tests/test_gates.py` already verifies offline: `test_gate2_passes_on_success`,
 `test_gate2_fails_on_explicit_failure`, `test_gate2_fails_closed_on_missing_conclusion` — the same
 function, the same tests, the same guarantee, whether run in CI or in this chapter's lab.
+
+### One Conclusion, Traced End to End
+
+Follow one literal `"success"` through the lab's whole pipeline. (The lab reads the Checks API
+where the real workflow reads `workflow_run.conclusion` off its event payload — same value, same
+contract, per Section 5.)
+
+**State before** — the check-runs response for PR #101's head SHA
+(`fixtures/check_runs_for_sha.json`, verbatim):
+
+```json
+{
+  "total_count": 1,
+  "check_runs": [
+    {
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+    }
+  ]
+}
+```
+
+**The call** — `fetch_ci_conclusion` scans `check_runs[]` for the entry with `name == "test"` and
+returns its `conclusion` field — the string `"success"` — which flows straight into
+`evaluate_gate2("success")`.
+
+**State after** — the returned `GateResult`, and what `gate_table` (from `pr_automerge.render`)
+actually prints for it — this is `python labs/lab_15_pr_health.py`'s real fixture-mode output:
+
+```
+GATE                    STATUS  RATIONALE
+-----------------------------------------
+gate2_pr_health         PASS    CI conclusion is 'success'
+```
+
+**What to notice:**
+
+- The gate reads exactly one field: `check_runs[].conclusion` for the run named `test`. `status`
+  (`"completed"`) is *not* what's evaluated — a completed run can still hold `"failure"`.
+- The printed `PASS` row matches the Section 2 table's `"success"` row character for character —
+  the rationale in the terminal *is* the `GateResult.rationale` string, unmodified.
+- Delete the `"test"` entry from that response and `fetch_ci_conclusion` returns `None` — the
+  bottom row of Section 2's table — and the same table prints
+  `FAIL    no CI conclusion found yet — fail-closed` instead.
 
 ## 7. Publishing Gate 2's Own Check Run
 

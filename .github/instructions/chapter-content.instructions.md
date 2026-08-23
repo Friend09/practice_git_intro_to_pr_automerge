@@ -70,8 +70,9 @@ Every chapter must start with this metadata block:
   (higher = harder to operate). Cell format: `Level — brief note` (2–5 words, e.g.
   `High — needs a PAT and a rotation policy`).
 - **Event/trigger diagrams:** ASCII art showing PR opened → event → workflow → job → step → outcome
-- **Concrete numbers:** rate limits (5,000/hr `GITHUB_TOKEN`), cron schedules (`0 6 * * 1`), page
-  sizes (100/page, 300-file cap), timeouts (seconds), thresholds (numeric) — never vague qualifiers
+- **Concrete numbers:** rate limits (1,000/hr per repo for `GITHUB_TOKEN` in Actions; 5,000/hr
+  for a PAT), cron schedules (`0 6 * * 1`), page
+  sizes (100/page; 3,000-file cap on /pulls/{n}/files), timeouts (seconds), thresholds (numeric) — never vague qualifiers
   like "fast" or "usually"
 - **YAML references:** Link to the chapter's companion workflow (see `.github/workflows/README.md`)
 - **Code-mechanism connection:** Every code example must name the exact `gh` subcommand or REST
@@ -106,3 +107,39 @@ Every chapter must start with this metadata block:
 - Add "In plain English:" before every formula
 - Include a numerical example after every formula, using the running PR-size worked example
   (see Chapter 16) wherever possible
+
+## The Worked Trace Pattern (Depth Standard)
+
+Diagrams that only show *what exists* (layers, refs, gates) are not enough. Every core-mechanics
+section must show *transformation*: this input → this command/event → this exact output. Six
+devices; apply them wherever a concept is demonstrated:
+
+1. **Bracket** — every demonstrated command or event gets a named state before, the exact
+   command/event, and the state after. Never show a command without both states. (Model:
+   Chapter 03 §2–5 — one shared starting commit graph, per-strategy resulting graphs.)
+2. **Version labels** — label the *data*, not just the boxes: `vA`/`vB` on file or JSON
+   versions, primes on rewritten commits (`C'`), and the literal fixture-spine SHAs
+   (head `a1b2c3d4e5f6…`, base `0f1e2d3c4b5a…`, PR #101).
+3. **"What to notice:"** — 2–4 bullets immediately after every shown output, pointing at the
+   exact tokens that matter. Never leave the reader to derive the lesson from raw output.
+4. **Fixture spine** — worked data comes from `fixtures/` (the mutually-consistent PR #101
+   story). Inline trimmed excerpts ≤19 lines; ≥20 lines go to Appendix A.2+ per the Code
+   Placement rules. Authored payloads with no fixture (e.g. event payloads) must reuse the
+   PR #101 spine SHAs so every chapter tells one story.
+5. **Engine trace** — when a machine evaluates something, show its own trace verbatim:
+   `##[debug] Evaluating: success() => true`, real `git log --graph` output, real `git status`
+   output, real API error JSON. (Model: Chapter 18 §3's exact resulting shell line.)
+6. **Spot-the-diff** — for security and failure topics: present a near-identical good/bad pair
+   and let the reader find the delta before the reveal.
+
+**Applicability:** devices 1 and 3 are mandatory for every demonstrated command/output; 2, 4,
+5, 6 only where they naturally fit. Do not force all six into every section.
+
+**Placement guardrails:** never insert or renumber a `## N.` numbered section header, and never
+touch the §16–20 headers (structure tests pin them). Renaming a §1–15 header is allowed only for
+a substantive correction, and only with its Table of Contents anchor updated in the same edit
+(the ToC is manually maintained and untested — it drifts silently). New depth content goes
+in-place inside existing sections, in `###` subsections, or in Appendix A.2+. Keep additions
+to roughly 60–80 lines per chapter per editing pass, and bump the `**Reading Time:**` header
+if warranted. Behavioral claims sourced from books or memory must be verified against current
+GitHub docs and cited with a dated URL in §19.

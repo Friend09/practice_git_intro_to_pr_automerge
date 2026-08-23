@@ -1,6 +1,6 @@
 # Chapter 23: Capstone
 
-**Reading Time:** ~60 minutes
+**Reading Time:** ~65 minutes
 **Prerequisites:** Chapter 17, Chapter 18, Chapter 19
 **Practice Notebook:** `notebooks/practice_23.ipynb`
 **Reference Notebook:** `notebooks/lab_23_capstone.ipynb`
@@ -167,6 +167,27 @@ specifically because it's append-only, human-readable, and trivially greppable w
 tooling, matching the same "no unnecessary complexity" philosophy this repo's `automerge.yml`
 (Chapter 17 §3) has followed throughout.
 
+### What one audit line actually looks like
+
+Here is the exact line the lab appends to `output/audit_log.jsonl` for PR #301 (the trivial typo
+fix this chapter's lab decides in §12) — captured verbatim from a fixture-mode run of
+`python labs/lab_23_capstone.py`:
+
+```json
+{"pr_number": 301, "merge": true, "gates": [{"gate": "gate1_repo_readiness", "status": "pass", "rationale": "main exists, protection configured, checks registered, auto-merge enabled"}, {"gate": "gate2_pr_health", "status": "pass", "rationale": "CI conclusion is 'success'"}, {"gate": "gate3_risk_scoring", "status": "pass", "rationale": "risk=5.9 <= threshold=70"}]}
+```
+
+**What to notice:**
+
+- The three `gates` objects map one-to-one onto Chapters 14, 15, and 16 — each gate's name,
+  `GateStatus` value, and rationale string serialized straight from the `GateResult` dataclass
+  (`pr_automerge/models.py`), with nothing summarized away.
+- `"risk=5.9 <= threshold=70"` is Gate 3's own rationale — the same 5.9 that Chapter 16's worked
+  example computes for a 3-line, 1-file, zero-critical-path change, and that
+  `tests/test_scoring.py` pins.
+- The top-level `"merge": true` is the composed verdict — but it's the *rationales* that make this
+  line auditable months later, which is why `build_audit_entry` keeps all of them.
+
 ## 7. The One-Command Answer
 
 ```python
@@ -182,6 +203,35 @@ def explain_decision(pr_number: int, log_path: Path) -> str:
 Call this with any PR number ever decided, and get back every gate's exact rationale — this is
 Chapter 01 §9's promise, kept: not a vague "it merged," but the full, gate-by-gate reasoning,
 readable long after the original decision was made.
+
+### The promise, kept — verbatim
+
+State before: `output/audit_log.jsonl` holds the two entries §12's lab run appended. The one
+command:
+
+```python
+print(explain_decision(301, log_path))
+```
+
+And its exact printed output, captured from a fixture-mode run of `python labs/lab_23_capstone.py`:
+
+```
+PR #301: MERGED
+  gate1_repo_readiness: PASS — main exists, protection configured, checks registered, auto-merge enabled
+  gate2_pr_health: PASS — CI conclusion is 'success'
+  gate3_risk_scoring: PASS — risk=5.9 <= threshold=70
+```
+
+**What to notice:**
+
+- Every gate's line is a sentence a human can audit — not a bare boolean. Twenty-two chapters of
+  insisting on `GateResult.rationale` existed so these four lines could be printed.
+- This is the same `Decision` object Chapter 17 §6 composes — `explain_decision` adds zero gate
+  logic; it only renders what `decide()` already recorded.
+- `risk=5.9` matches Chapter 16's worked example and `tests/test_scoring.py` exactly — the audit
+  trail reports the engine's real number, not a re-derivation.
+- The verdict says `MERGED`/`HELD` (past tense) where the live run's decision line says
+  `MERGE`/`HOLD` — this is a *record* being read back, not a decision being made.
 
 ## 8. Running This Against a Cold-Start Repo
 
@@ -239,6 +289,24 @@ gates' `PASS` reasons, #302's `HOLD` verdict naming Gate 3's hard-ceiling ration
 Neither entry interferes with the other; this is the durable, per-PR queryability the audit trail
 exists to provide.
 
+PR #301's explanation is shown in §7. Here is `explain_decision(302, log_path)`'s exact output
+from the same fixture-mode run:
+
+```
+PR #302: HELD
+  gate1_repo_readiness: PASS — main exists, protection configured, checks registered, auto-merge enabled
+  gate2_pr_health: PASS — CI conclusion is 'success'
+  gate3_risk_scoring: FAIL — 900 lines exceeds the hard ceiling of 500 — never auto-merged regardless of score
+```
+
+**What to notice:**
+
+- Two gates passed, yet the PR held — the airlock fails closed on any single `FAIL`, and the log
+  preserves *which* door stayed shut and why (700 additions + 200 deletions = 900 lines > the
+  `hard_ceiling_lines: 500` from `gates.yml`, per Chapter 16 §5).
+- The rationale cites the hard ceiling, not a risk score — the ceiling short-circuits regardless
+  of score, exactly the behavior Chapter 16's `evaluate_gate3` implements.
+
 ## 13. Case Study: What This Repo's Own Verification Log Already Demonstrated
 
 `notes/IMPROVEMENTS_SUMMARY.md`'s Live-Repo Verification Log — four real discoveries, each dated,
@@ -269,6 +337,11 @@ chapter's lab to build a parallel audit-trail entry for a couple of representati
 the real gates' published check runs and PR comment show for the real PR — they should describe
 the same underlying logic, even though this lab's entries are separate, local records rather than
 the live gates' own output.
+
+Expected result for the local half: your `explain_decision(301, ...)` and `explain_decision(302,
+...)` calls should print exactly the §7 and §12 blocks above — `PR #301: MERGED` with three `PASS`
+lines, `PR #302: HELD` on the hard-ceiling `FAIL` — and `output/audit_log.jsonl` should hold two
+lines shaped like §6's.
 
 ## 16. Common Pitfalls & Misconceptions
 

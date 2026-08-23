@@ -1,6 +1,6 @@
 # Chapter 08: Actions Anatomy
 
-**Reading Time:** ~40 minutes
+**Reading Time:** ~50 minutes
 **Prerequisites:** Chapter 07 (The GitHub API & Apps)
 **Practice Notebook:** `notebooks/practice_08.ipynb`
 **Reference Notebook:** `notebooks/lab_08_actions_anatomy.ipynb`
@@ -91,6 +91,7 @@ familiar — Actions' specific vocabulary is the only new part.
   - [19. Additional Resources](#19-additional-resources)
   - [20. Appendix A — Code Index](#20-appendix-a--code-index)
     - [A.1 — Parsing a Workflow's Anatomy (from Section 15)](#a1--parsing-a-workflows-anatomy-from-section-15)
+    - [A.2 — The Real `ci.yml`, Line-Numbered (from Section 7)](#a2--the-real-ciyml-line-numbered-from-section-7)
 
 ---
 
@@ -156,12 +157,83 @@ across separate runs of the same job — every run starts from the same clean im
 mechanical reason job-to-job state sharing needs an explicit mechanism (artifacts, or
 `needs`-passed outputs, Chapter 10) rather than "just being there."
 
+### What's Actually in the Image, and How Labels Match
+
+"Clean image" does not mean "bare OS." A GitHub-hosted runner image is a fully stocked
+development machine: Python, Node.js, Go, Java (all LTS versions), Docker, `git`, `git-lfs`,
+and the `gh` CLI are all preinstalled on the Ubuntu image, with platform-appropriate additions
+elsewhere (Xcode on macOS, for example). That's why `ci.yml` never installs Python or git —
+only `pytest`, the one tool the image doesn't ship. It still runs `actions/setup-python@v5`
+anyway, to pin *exactly* `'3.12'` rather than trusting whichever versions the image happens to
+carry this month. The authoritative per-image inventory lives in the
+`actions/runner-images` repository (each image links an "Included Software" README), also
+linked from every run's log under "Set up job."
+
+`runs-on:` selects an image by **label**. `ubuntu-latest`, `windows-latest`, and
+`macos-latest` are aliases GitHub re-points to newer OS versions over time — "latest" means
+"newest *supported*," not newest released — while version-pinned labels (`ubuntu-22.04`-style)
+freeze the OS at the cost of eventual deprecation. `runs-on:` also accepts an array of labels,
+in which case the job runs only on a runner matching **all** of them — the mechanism Section
+10's self-hosted runners use for targeting (e.g. `[self-hosted, linux, gpu]`).
+
 ## 7. Reading `ci.yml` as a Worked Example
 
 This repo's actual `.github/workflows/ci.yml` — the workflow Gate 2 (Chapter 15) reads the
 conclusion of — has exactly one job (`test`) with five steps: checkout, set up Python, install
-pytest, run the sandbox app's test suite, and write a job summary. Reading it against this
-chapter's vocabulary:
+pytest, run the sandbox app's test suite, and write a job summary. The full 45-line file is
+quoted, line-numbered, in
+[Appendix A.2](#a2--the-real-ciyml-line-numbered-from-section-7); here is the excerpt where
+the anatomy's top three layers all appear:
+
+```text
+10. name: CI
+11.
+12. on:
+13.   pull_request:
+14.     paths:
+15.       - 'sandbox/**'
+16.   workflow_dispatch: {}
+17.
+18. permissions:
+19.   contents: read
+20.
+21. jobs:
+22.   test:
+23.     runs-on: ubuntu-latest
+24.     steps:
+```
+
+Breaking the file down block by block (line numbers match Appendix A.2):
+
+- **Lines 1–8** *(A.2)*: a comment block for humans — never executed. It documents which
+  workflow reads this one's conclusion and which chapters reference it.
+- **Line 10**: the **workflow** layer (Section 2). "CI" is this workflow's display name in the
+  Actions tab, and the name branch protection's required-check list knows it by (Chapter 05).
+- **Lines 12–16**: the trigger — `pull_request`, path-filtered to `sandbox/**`, plus a manual
+  `workflow_dispatch`. This is the `on:` block Chapter 09 spends a whole chapter on.
+- **Lines 18–19**: the workflow-level `permissions:` ceiling (Section 8) — `contents: read`
+  and nothing else.
+- **Lines 21–24**: the **job** layer (Section 3). One job, id `test`, requesting a
+  GitHub-hosted `ubuntu-latest` runner (Section 6); line 24 opens its ordered **step** list
+  (Section 4).
+- **Lines 25–31** *(A.2)*: two `uses:` steps (Section 5) — `actions/checkout@v4`, then
+  `actions/setup-python@v5` configured with a `with:` input pinning Python `'3.12'`.
+- **Lines 33–39** *(A.2)*: two `run:` steps — `pip install pytest`, then
+  `python -m pytest sandbox/app -v`, the command whose pass/fail becomes this workflow's
+  conclusion.
+- **Lines 41–45** *(A.2)*: the job-summary step, guarded by `if: always()` (Section 9) so it
+  writes to `$GITHUB_STEP_SUMMARY` even when the test step fails.
+
+**What to notice:**
+
+- Lines 10, 12, 21, and 24 are the four structural keys — `name:`, `on:`, `jobs:`, `steps:` —
+  that Section 14's fast-reading checklist tells you to find first in *any* workflow file.
+- Indentation *is* the anatomy: `test:` nests under `jobs:`, `runs-on:` and `steps:` nest
+  under `test:` — the YAML tree and the four-layer diagram in Section 1 are the same tree.
+- `workflow_dispatch: {}` on line 16 is an empty mapping — the event needs no configuration,
+  but the key must still be present for the manual "Run workflow" button to exist.
+
+Reading the same file against this chapter's vocabulary as a summary tree:
 
 ```
 workflow: "CI"
@@ -209,6 +281,13 @@ specialized hardware, air-gapped environments, or workloads too large/long for h
 limits, but it shifts patching, isolation between jobs, and secret exposure risk onto you entirely.
 This repo never needs self-hosted runners; every gate workflow runs on `ubuntu-latest`.
 
+The middle path is an **ephemeral, just-in-time (JIT) runner**: a self-hosted runner created
+through the REST API, started with `./run.sh --jitconfig <encoded_config>`, that performs **at
+most one job before being automatically removed** from the repo or organization. That restores
+the fresh-machine-per-job property GitHub-hosted runners give you for free — provided your
+automation actually hands each JIT runner a clean environment, since reused hardware can leak
+state from the previous job.
+
 ## 11. ⚠️ ADVANCED: Matrix Builds
 
 > ⚠️ **ADVANCED TOPIC:** Running the same job across multiple parameter combinations.
@@ -224,6 +303,52 @@ A `strategy: matrix:` block turns one job definition into N parallel jobs, one p
 the listed values (here, two Python versions) — each gets its own fresh runner, same as any other
 job. Useful for testing across multiple language versions or OSes; this repo's own CI doesn't need
 it since the sandbox app targets exactly one Python version.
+
+### A Worked Expansion: 3 × 2 → 6 Jobs
+
+**Before** — one job definition, `test`, carrying a two-variable matrix:
+
+```yaml
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, macos-latest]
+```
+
+**After** — the run triggers, and the run's job list shows **six** entries. With no `name:`
+set, the UI's default label is the job name plus that combination's values (a UI default,
+not documented syntax):
+
+```
+test (3.11, ubuntu-latest)
+test (3.11, macos-latest)
+test (3.12, ubuntu-latest)
+test (3.12, macos-latest)
+test (3.13, ubuntu-latest)
+test (3.13, macos-latest)
+```
+
+**What to notice:**
+
+- 3 versions × 2 OSes = 6 **jobs** — the matrix multiplies jobs (each on its own fresh
+  runner), never steps within a job.
+- Each label lists the values in the order the matrix variables were defined:
+  `python-version` first, then `os`.
+- A matrix generates at most **256 jobs per workflow run** — hosted or self-hosted alike.
+
+Four knobs adjust the expansion:
+
+- `include:` — add a variant: a combination not produced by the cross-product, or extra
+  properties merged onto matching existing combinations.
+- `exclude:` — remove specific combinations (e.g. drop `{python-version: "3.11", os:
+  macos-latest}` to skip one of the six).
+- `fail-fast:` — defaults to `true`: one failing job cancels all in-progress and queued
+  sibling jobs in the matrix.
+- `max-parallel:` — caps how many of the generated jobs run simultaneously (default: as many
+  as runner availability allows).
 
 ## 12. Case Study: A Step That "Disappeared" Between Jobs
 
@@ -267,7 +392,9 @@ Reading an unfamiliar workflow file
 Load any workflow file (this repo's `ci.yml` is a good start) with `yaml.safe_load` and print its
 four-layer anatomy — name, triggers, permissions, and each job's steps — exactly as this chapter's
 lab script does. Confirm every field you see in the raw YAML shows up in your printed summary; if
-something's missing, that's a gap in your parsing, not the file.
+something's missing, that's a gap in your parsing, not the file. Your expected result is the
+anatomy already printed in Section 7 (and the full line-numbered listing in Appendix A.2 is the
+ground truth to diff your output against, line by line).
 
 ## 16. Common Pitfalls & Misconceptions
 
@@ -313,6 +440,9 @@ that can start a workflow, which ones expose secrets, and which ones fork PRs ca
 - **GitHub Docs, "Workflow syntax for GitHub Actions"** — https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions (fetched 2026-08)
 - **GitHub Docs, "Choosing the runner for a job"** — https://docs.github.com/en/actions/using-jobs/choosing-the-runner-for-a-job (fetched 2026-08)
 - **GitHub Docs, "Running variations of jobs in a workflow"** — https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs (fetched 2026-08)
+- **GitHub Docs, "Workflow syntax for GitHub Actions"** (reference: `strategy.fail-fast` default, 256-job matrix cap, `runs-on` label matching) — https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax (fetched 2026-08)
+- **`actions/runner-images` repository** (per-image "Included Software" inventories) — https://github.com/actions/runner-images (fetched 2026-08)
+- **GitHub Docs, "Security hardening for GitHub Actions"** (ephemeral/JIT runners) — https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions (fetched 2026-08)
 
 ## 20. Appendix A — Code Index
 
@@ -333,3 +463,72 @@ summarize_workflow(raw) → {name, triggers, permissions, jobs: [{job_id, runs_o
 
 See `labs/lab_08_actions_anatomy.py` for the full runnable version, including
 `load_real_ci_workflow()` for live mode.
+
+### A.2 — The Real `ci.yml`, Line-Numbered (from Section 7)
+
+**What the code does:** This is this repo's actual `.github/workflows/ci.yml`, quoted verbatim
+with line numbers added for the commentary in Section 7. On any `pull_request` touching
+`sandbox/**` (or a manual dispatch), one job on a GitHub-hosted `ubuntu-latest` runner checks
+out the PR head, pins Python 3.12, installs pytest, runs the sandbox app's test suite, and
+writes a job summary even on failure.
+
+**ASCII flowchart:**
+
+```
+pull_request touching sandbox/** (or workflow_dispatch)
+        │
+        ▼
+job "test" on ubuntu-latest  (permissions: contents: read)
+  checkout ─▶ setup-python 3.12 ─▶ pip install pytest ─▶ python -m pytest sandbox/app -v
+        │
+        ▼
+write $GITHUB_STEP_SUMMARY   (if: always() — runs even when the tests failed)
+```
+
+```text
+ 1. # CI — builds and tests sandbox/app/
+ 2. # This is the workflow that Gate 2 (gate2-pr-health.yml) reads the conclusion of.
+ 3. # It is registered as a required status check in branch protection (Chapter 05),
+ 4. # and its completion is what gate2-pr-health.yml listens for via workflow_run
+ 5. # (Chapter 10 — workflow_run is the sanctioned way to react to another workflow's
+ 6. # completion regardless of which token that workflow used internally).
+ 7. # Chapter: learning_modules/chapter_04_actions_anatomy.md (built here),
+ 8. #          learning_modules/chapter_05_branch_protection.md (registered here)
+ 9.
+10. name: CI
+11.
+12. on:
+13.   pull_request:
+14.     paths:
+15.       - 'sandbox/**'
+16.   workflow_dispatch: {}
+17.
+18. permissions:
+19.   contents: read
+20.
+21. jobs:
+22.   test:
+23.     runs-on: ubuntu-latest
+24.     steps:
+25.       - name: Checkout PR head
+26.         uses: actions/checkout@v4
+27.
+28.       - name: Set up Python
+29.         uses: actions/setup-python@v5
+30.         with:
+31.           python-version: '3.12'
+32.
+33.       - name: Install test dependencies
+34.         run: pip install pytest
+35.
+36.       - name: Run sandbox app tests
+37.         # `python -m pytest` (not bare `pytest`) so the repo root lands on sys.path
+38.         # and `from sandbox.app...` resolves as a namespace package.
+39.         run: python -m pytest sandbox/app -v
+40.
+41.       - name: Write job summary
+42.         if: always()
+43.         run: |
+44.           echo "## CI Result" >> "$GITHUB_STEP_SUMMARY"
+45.           echo "sandbox/app test suite ran — see the step above for pass/fail detail." >> "$GITHUB_STEP_SUMMARY"
+```

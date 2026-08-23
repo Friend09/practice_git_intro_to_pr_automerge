@@ -105,7 +105,9 @@ can restrict, among other things: direct pushes (force everything through a PR),
 checks must pass first, whether reviews are required and how many, whether force-pushes or
 deletions are allowed at all, and whether admins are exempt from any of the above. None of this is
 enforced by your code — it's enforced by GitHub's merge machinery itself, the same machinery that
-decides whether `gh pr merge` (auto or direct) succeeds.
+decides whether `gh pr merge` (auto or direct) succeeds. Required reviews are protection's native
+human gate; the other native human-gate mechanism — a deployment environment with required
+reviewers, a manually operated airlock door — is covered in Chapter 17 §9.
 
 ## 2. Required Status Checks Are Matched By Name
 
@@ -133,6 +135,17 @@ gh api -X PUT repos/{owner}/{repo}/branches/main/protection \
 is what produces `mergeable_state: "behind"` from Chapter 02 §8). This repo's own sandbox uses
 exactly these three required check names.
 
+Bracket the write with a read-back — confirm the settings actually took effect:
+
+```bash
+gh api repos/{owner}/{repo}/branches/main/protection \
+  --jq '{contexts: .required_status_checks.contexts, enforce_admins: .enforce_admins.enabled}'
+# {"contexts":["test","gate2-pr-health","gate3-risk-score"],"enforce_admins":false}
+```
+
+Run the read-back from your own authenticated `gh` session — it's the full endpoint from Section 7,
+so `GITHUB_TOKEN` inside a workflow would 403 on it (Section 8).
+
 ## 4. `enforce_admins`: Who's Actually Bound By the Rules
 
 `enforce_admins: false` (the default) means repo admins bypass every protection rule above — direct
@@ -143,19 +156,49 @@ curriculum content straight to `main` (as this repo's own commit history shows f
 
 ## 5. Two Ways to Ask "Is This Branch Protected?"
 
-There are two entirely different API reads here, and conflating them is Section 8's whole point:
+There are two entirely different API reads here, and conflating them is Section 8's whole point.
+Here they are side by side, worked from this repo's own fixtures — the light payload is
+`fixtures/branch_light_status.json`, the full one `fixtures/branch_protection_full.json`:
 
-```
-GET /repos/{o}/{r}/branches/{branch}
-        │
-        ▼
-{"protected": true}   ← a boolean. That's it. GITHUB_TOKEN CAN read this.
+**Light read** — `GET /repos/{o}/{r}/branches/main` (`GITHUB_TOKEN` CAN read this):
 
-GET /repos/{o}/{r}/branches/{branch}/protection
-        │
-        ▼
-{full config: required checks, enforce_admins, reviews, ...}   ← GITHUB_TOKEN CANNOT read this.
+```json
+{
+  "name": "main",
+  "commit": {
+    "sha": "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736"
+  },
+  "protected": true
+}
 ```
+
+**Full read** — `GET /repos/{o}/{r}/branches/main/protection` (`GITHUB_TOKEN` CANNOT — HTTP 403,
+Section 8):
+
+```json
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["test", "gate2-pr-health", "gate3-risk-score"]
+  },
+  "enforce_admins": {"enabled": false},
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_force_pushes": {"enabled": false},
+  "allow_deletions": {"enabled": false}
+}
+```
+
+**What to notice:**
+
+- The light read answers exactly one question — `"protected": true` — in a three-field payload.
+  Everything about *what* is enforced is absent. Cheap, and readable with plain `contents: read`
+  (Section 6).
+- The full read carries `required_status_checks.contexts` — `"test"`, `"gate2-pr-health"`,
+  `"gate3-risk-score"` — the exact strings protection matches by name (Section 2), and the same
+  three names Gate 1 depends on. Only this endpoint exposes them (Section 7).
+- The light read's `commit.sha` (`0f1e2d3c…`) is the fixture spine's base SHA — the tip of `main`
+  that PR #101 targets, the same branch both endpoints describe from two permission worlds apart.
 
 ## 6. The Light Read: `GET /branches/{branch}`
 
