@@ -6,6 +6,12 @@ Forward-looking backlog. See `IMPROVEMENTS_SUMMARY.md` for the dated completion 
 
 None currently.
 
+**Recently completed (2026-09-06): Review pass.** Fixed the `gh api --repo` live-mode bug
+in `pr_automerge/gh_client.py` (affected every REST-calling lab; regression tests added and
+verified live), three dangling ToC anchors, 16 drifted README reading times, the missing
+`🔬 Try it live` footer on all 48 notebooks, the missing `.github/workflows/README.md`, and
+both deferred follow-ups below. Ledger entry in `IMPROVEMENTS_SUMMARY.md`.
+
 **Recently completed (2026-08-23): Depth retrofit — Worked Trace pattern across all 24
 chapters.** Gap analysis against *Learning Git* (Skoulikari) and *Learning GitHub Actions*
 (Laster) → six-device Worked Trace pattern codified in
@@ -14,9 +20,10 @@ spec + rate-limit fix; Batch 1 Ch 09–13; Batch 2 Ch 14–18; Batch 3 Ch 19–2
 Ch 00–08 + the 3,000-file-cap correction). ~2,200 lines added across 31 files; full ledger
 in `IMPROVEMENTS_SUMMARY.md`. Deferred follow-ups from the initiative:
 
-- [ ] `##[debug]` trace markdown cell in the lab_13/practice_13 notebook pair (synchronized
-      two-file edit)
-- [ ] lab_09 has no PRA_MODE fixture/live toggle (pre-existing gap, noted during the audit)
+- [x] `##[debug]` trace markdown cell in the lab_13/practice_13 notebook pair (synchronized
+      two-file edit) — done 2026-09-06
+- [x] lab_09 has no PRA_MODE fixture/live toggle (pre-existing gap, noted during the audit)
+      — done 2026-09-06 (`list_recent_runs()` + `fixtures/workflow_runs_sample.json`)
 
 ---
 

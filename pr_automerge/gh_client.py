@@ -89,7 +89,12 @@ def run_gh(args: list[str], *, fixture: str | None = None) -> dict[str, Any]:
 
     repo = _repo()
     full_args = ["gh", *args]
-    if "--repo" not in args and "-R" not in args:
+    # `gh api` has no --repo/-R flag (verified against gh 2.99, 2026-09) -- it resolves
+    # the repo from `{owner}/{repo}` placeholders or a literal path instead, and the
+    # labs interpolate PRA_REPO into the path themselves. Appending --repo to it fails
+    # with "unknown flag: --repo", so only the porcelain subcommands get it.
+    is_api_call = bool(args) and args[0] == "api"
+    if not is_api_call and "--repo" not in args and "-R" not in args:
         full_args += ["--repo", repo]
 
     try:

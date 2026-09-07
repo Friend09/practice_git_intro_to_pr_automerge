@@ -83,7 +83,7 @@ of data.
   - [1. The Two Vulnerability Classes This Chapter Covers](#1-the-two-vulnerability-classes-this-chapter-covers)
   - [2. Script Injection: The Mechanism](#2-script-injection-the-mechanism)
   - [3. Seeing the Literal Substitution](#3-seeing-the-literal-substitution)
-  - [4. Why Quoting the `${{ }}` Directly Doesn't Save You](#4-why-quoting-the--directly-doesnt-save-you)
+  - [4. Why Quoting the `${{ }}` Directly Doesn't Save You](#4-why-quoting-the---directly-doesnt-save-you)
   - [5. The Fix: `env:` Indirection](#5-the-fix-env-indirection)
   - [6. Which Fields Are Untrusted](#6-which-fields-are-untrusted)
   - [7. Building a Detector](#7-building-a-detector)

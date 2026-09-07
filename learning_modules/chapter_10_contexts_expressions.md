@@ -71,7 +71,7 @@ familiar — GitHub Actions' vocabulary and function set are just its own.
   - [Table of Contents](#table-of-contents)
   - [1. What a Context Actually Is](#1-what-a-context-actually-is)
   - [2. The `github` Context](#2-the-github-context)
-  - [3. `${{ }}`: A Small Expression Language, Not Real Code](#3--a-small-expression-language-not-real-code)
+  - [3. `${{ }}`: A Small Expression Language, Not Real Code](#3---a-small-expression-language-not-real-code)
   - [4. The Four Status Functions](#4-the-four-status-functions)
   - [5. Where Expressions Are Allowed](#5-where-expressions-are-allowed)
   - [6. Job Outputs: Publishing a Value](#6-job-outputs-publishing-a-value)

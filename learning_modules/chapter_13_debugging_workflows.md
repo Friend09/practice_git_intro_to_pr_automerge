@@ -78,7 +78,7 @@ is itself the whole problem.
   - [4. Check 1: Does It Even Parse?](#4-check-1-does-it-even-parse)
   - [5. Check 2: Is It On the Default Branch?](#5-check-2-is-it-on-the-default-branch)
   - [6. Check 3: Does the Event Type Match?](#6-check-3-does-the-event-type-match)
-  - [7. Check 4: Do `paths:`/`branches:` Filters Match?](#7-check-4-do-paths-branches-filters-match)
+  - [7. Check 4: Do `paths:`/`branches:` Filters Match?](#7-check-4-do-pathsbranches-filters-match)
   - [8. Check 5: Is the Workflow Disabled?](#8-check-5-is-the-workflow-disabled)
   - [9. ⚠️ ADVANCED: Replaying Filter Logic Locally](#9-️-advanced-replaying-filter-logic-locally)
     - [Debug Logging: When a Run Exists but Won't Explain Itself](#debug-logging-when-a-run-exists-but-wont-explain-itself)

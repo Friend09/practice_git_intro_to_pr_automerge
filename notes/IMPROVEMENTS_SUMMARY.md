@@ -34,6 +34,36 @@ forward backlog.
 
 ## Batch Update Log
 
+**2026-09-06 — Review pass: live-mode bug fix, ToC/README drift, deferred follow-ups.**
+Scripted audit of all 24 chapters (ToC anchors via a github-slugger-faithful slug, every
+"Chapter N §M" cross-reference, every referenced repo path, header vs README metadata) plus
+`pytest`, all 24 labs in fixture mode, and the notebook contract. Findings and fixes:
+(1) **Real bug — every lab's live mode was broken for REST calls.** `pr_automerge/gh_client.py`
+appended `--repo` to every subcommand, but `gh api` has no `--repo`/`-R` flag (verified: gh
+2.99.0 → `unknown flag: --repo`; manual fetched 2026-09), so `run_gh(["api", ...])` in labs
+02/04/05/07/12/14/15/16 failed (lab 17 uses only porcelain `gh pr merge`, unaffected) under `PRA_MODE=live`. Fixed in the one wrapper (API calls
+skip the flag; porcelain subcommands keep it); new `tests/test_gh_client.py` (5 offline tests,
+subprocess mocked) pins it; verified live: `lab_09` listed 20 real runs from the sandbox repo.
+(2) Three dangling ToC anchors (Ch 10 §3, Ch 13 §7, Ch 18 §4 — headings with `${{ }}` / `/`
+inside code spans slug to `---` / no separator); link targets fixed, no headers touched.
+(3) README reading times had drifted on 16 of 24 rows after the 2026-08-23 depth retrofit;
+synced to chapter headers, totals recomputed (Core 1,065 min ≈ 17–18 h; all 1,195 min ≈
+19–20 h). (4) Tracker follow-up closed: `lab_09` gained a `PRA_MODE` fixture/live toggle —
+`list_recent_runs()` reads `GET /repos/{owner}/{repo}/actions/runs`, new
+`fixtures/workflow_runs_sample.json` on the PR #101 spine (CI + Gate 3 on `pull_request`,
+Gate 2 on `workflow_run`, one shared `head_sha` = hop 1); notebook pair gained a synchronized
+§4; Ch 09 Appendix A.1 extended. (5) Tracker follow-up closed: `lab_13`/`practice_13` gained
+the synchronized `##[debug]` engine-trace markdown cell (mirrors Ch 13 §9). (6) All 48
+notebooks lacked the contract's `🔬 Try it live` footer line; added (honest offline variant
+for the 10 chapters whose labs make no `gh` calls). (7) `.github/instructions/chapter-content
+.instructions.md` pointed at a nonexistent `.github/workflows/README.md`; created it as a
+workflow→gate→trigger→chapter map (tests glob `*.yml` only, so it is inert). (8) Ch 07 §19's
+`gh api` manual link was the only §19 URL with neither a fetched date nor a "not
+date-sensitive" note; tagged. Both edited reference notebooks re-executed via nbconvert and
+stripped. Tests: 163 passed, 2 skipped (bare `pytest`, doctests included; `pytest tests/`
+gives 160 — the earlier "158 vs 155" gap is the same doctest difference, not a regression).
+Nothing committed — review-and-update only.
+
 **2026-08-23 — Depth retrofit Batch 4 + 3,000-file-cap correction (Chapters 00–08; initiative
 complete).** Backfill of the chapters behind the reader's position, all in the Worked Trace
 pattern, with git output captured from throwaway scratchpad repos (never authored): Ch 00 walks

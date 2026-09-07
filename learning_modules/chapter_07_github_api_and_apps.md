@@ -425,7 +425,7 @@ built from.
 - **GitHub Docs, "About creating GitHub Apps"** — https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps (fetched 2026-08)
 - **GitHub Docs, "Differences between GitHub Apps and OAuth apps"** — https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps (fetched 2026-08)
 - **GitHub Docs, "Rate limits for the REST API"** — https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api (fetched 2026-08)
-- **GitHub CLI manual, `gh api`** — https://cli.github.com/manual/gh_api
+- **GitHub CLI manual, `gh api`** — https://cli.github.com/manual/gh_api (fetched 2026-09; note: `gh api` has no `--repo`/`-R` flag — the repo comes from `{owner}/{repo}` placeholders or the literal path)
 - **GitHub Docs, "REST API endpoints for check runs" (create response fields, `PATCH …/check-runs/{id}`)** — https://docs.github.com/en/rest/checks/runs (fetched 2026-08)
 - **`actions/github-script` README (current major version, `github`/`context` objects)** — https://github.com/actions/github-script (fetched 2026-08)
 

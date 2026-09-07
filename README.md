@@ -34,48 +34,48 @@ built specifically for exactly that gap.
 
 | Ch  | Title                                                                   | Lab                        | Depth | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
-| 00  | Fundamentals: Git, Pull Requests \& GitHub Actions                      | 📓 practice_00 · 🐍 lab_00 | Core  | ~50 min |
+| 00  | Fundamentals: Git, Pull Requests \& GitHub Actions                      | 📓 practice_00 · 🐍 lab_00 | Core  | ~55 min |
 | 01  | Auto-Merge & The Airlock Principle                                       | 📓 practice_01 · 🐍 lab_01 | Core  | ~40 min |
-| 02  | Refs, Branches & What a PR Really Is                                     | 📓 practice_02 · 🐍 lab_02 | Core  | ~45 min |
-| 03  | Merge Commit vs Squash vs Rebase                                         | 📓 practice_03 · 🐍 lab_03 | Core  | ~35 min |
-| 04  | Reading PR Data: `gh pr view`, `gh api`, Pagination                      | 📓 practice_04 · 🐍 lab_04 | Core  | ~45 min |
+| 02  | Refs, Branches & What a PR Really Is                                     | 📓 practice_02 · 🐍 lab_02 | Core  | ~50 min |
+| 03  | Merge Commit vs Squash vs Rebase                                         | 📓 practice_03 · 🐍 lab_03 | Core  | ~40 min |
+| 04  | Reading PR Data: `gh pr view`, `gh api`, Pagination                      | 📓 practice_04 · 🐍 lab_04 | Core  | ~55 min |
 | 05  | Branch Protection & Rulesets                                             | 📓 practice_05 · 🐍 lab_05 | Core  | ~45 min |
-| 06  | **Native Auto-Merge vs Your Own Merge Call**                             | 📓 practice_06 · 🐍 lab_06 | Core  | ~50 min |
+| 06  | **Native Auto-Merge vs Your Own Merge Call**                             | 📓 practice_06 · 🐍 lab_06 | Core  | ~55 min |
 
 ### Phase 2 — The GitHub API & Actions Mechanics _(Chapters 7–13)_
 
 | Ch  | Title                                                                   | Lab                        | Depth | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
 | 07  | **The GitHub API In Depth: Pulling & Pushing Data, and GitHub Apps**    | 📓 practice_07 · 🐍 lab_07 | Core  | ~55 min |
-| 08  | Actions Anatomy: Workflows, Jobs, Steps, Runners                        | 📓 practice_08 · 🐍 lab_08 | Core  | ~40 min |
-| 09  | The Event Model: `pull_request`, `pull_request_target`, `schedule`, …   | 📓 practice_09 · 🐍 lab_09 | Core  | ~50 min |
-| 10  | Contexts, Expressions, Outputs & `needs`                                | 📓 practice_10 · 🐍 lab_10 | Core  | ~45 min |
-| 11  | **Tokens & Permissions** — the no-downstream-trigger rule                | 📓 practice_11 · 🐍 lab_11 | Core  | ~50 min |
+| 08  | Actions Anatomy: Workflows, Jobs, Steps, Runners                        | 📓 practice_08 · 🐍 lab_08 | Core  | ~50 min |
+| 09  | The Event Model: `pull_request`, `pull_request_target`, `schedule`, …   | 📓 practice_09 · 🐍 lab_09 | Core  | ~55 min |
+| 10  | Contexts, Expressions, Outputs & `needs`                                | 📓 practice_10 · 🐍 lab_10 | Core  | ~50 min |
+| 11  | **Tokens & Permissions** — the no-downstream-trigger rule                | 📓 practice_11 · 🐍 lab_11 | Core  | ~55 min |
 | 12  | Status Checks, Check Runs & Commit Statuses                             | 📓 practice_12 · 🐍 lab_12 | Core  | ~40 min |
-| 13  | Debugging Workflows That Didn't Fire                                    | 📓 practice_13 · 🐍 lab_13 | Core  | ~40 min |
+| 13  | Debugging Workflows That Didn't Fire                                    | 📓 practice_13 · 🐍 lab_13 | Core  | ~45 min |
 
 ### Phase 3 — Building the Three Gates _(Chapters 14–17)_
 
 | Ch  | Title                                                                   | Lab                        | Depth | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----- | ------- |
 | 14  | Gate 1 — Repo Readiness + the Weekly Health Cron                        | 📓 practice_14 · 🐍 lab_14 | Core  | ~45 min |
-| 15  | Gate 2 — PR Health: Fail-Closed vs Fail-Open                            | 📓 practice_15 · 🐍 lab_15 | Core  | ~45 min |
+| 15  | Gate 2 — PR Health: Fail-Closed vs Fail-Open                            | 📓 practice_15 · 🐍 lab_15 | Core  | ~50 min |
 | 16  | **Gate 3 — Risk Scoring**                                                | 📓 practice_16 · 🐍 lab_16 | Core  | ~55 min |
-| 17  | Wiring the Airlock: Chaining 1→2→3→Merge                                | 📓 practice_17 · 🐍 lab_17 | Core  | ~50 min |
+| 17  | Wiring the Airlock: Chaining 1→2→3→Merge                                | 📓 practice_17 · 🐍 lab_17 | Core  | ~55 min |
 
 ### Phase 4 — Hardening, Scale & Operations _(Chapters 18–23)_
 
 | Ch  | Title                                                                   | Lab                        | Depth       | Reading |
 | --- | ------------------------------------------------------------------------ | --------------------------- | ----------- | ------- |
-| 18  | Security: `pull_request_target` & Fork PRs                              | 📓 practice_18 · 🐍 lab_18 | Core        | ~50 min |
+| 18  | Security: `pull_request_target` & Fork PRs                              | 📓 practice_18 · 🐍 lab_18 | Core        | ~55 min |
 | 19  | Calibrating the Threshold                                                | 📓 practice_19 · 🐍 lab_19 | Core        | ~50 min |
-| 20  | Merge Queues                                                             | 📓 practice_20 · 🐍 lab_20 | ⭐ Optional | ~40 min |
-| 21  | Reusable Workflows & Composite Actions                                  | 📓 practice_21 · 🐍 lab_21 | ⭐ Optional | ~40 min |
+| 20  | Merge Queues                                                             | 📓 practice_20 · 🐍 lab_20 | ⭐ Optional | ~45 min |
+| 21  | Reusable Workflows & Composite Actions                                  | 📓 practice_21 · 🐍 lab_21 | ⭐ Optional | ~50 min |
 | 22  | Buy vs Build: Mergify, Kodiak, Renovate                                 | 📓 practice_22 · 🐍 lab_22 | ⭐ Optional | ~35 min |
-| 23  | **Capstone**: The Complete Airlock, Audit Trail & Rollback              | 📓 practice_23 · 🐍 lab_23 | Core        | ~60 min |
+| 23  | **Capstone**: The Complete Airlock, Audit Trail & Rollback              | 📓 practice_23 · 🐍 lab_23 | Core        | ~65 min |
 
-**Total reading (Core only, ~21 chapters):** ~15–16 hours
-**Total reading (all 24 chapters):** ~18–20 hours
+**Total reading (Core only, 21 chapters):** ~17–18 hours
+**Total reading (all 24 chapters):** ~19–20 hours
 
 ---
 

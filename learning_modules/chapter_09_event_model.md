@@ -415,13 +415,19 @@ how expressions evaluate, and how `needs` passes data between jobs.
 
 ### A.1 — The Event Matrix and the Chaining Simulation (from Section 15)
 
-**What the code does:** Encodes the event comparison matrix as structured data and simulates
-`head_sha` fidelity across a multi-hop `workflow_run` chain, printing where it collapses.
+**What the code does:** Encodes the event comparison matrix as structured data, lists the repo's
+recent runs with the event that fired each and its `head_sha` (fixture: the PR #101 spine; live:
+`GET /repos/{owner}/{repo}/actions/runs` via `gh api`), and simulates `head_sha` fidelity across
+a multi-hop `workflow_run` chain, printing where it collapses.
 
 **ASCII flowchart:**
 
 ```
 EVENT_MATRIX → print_event_matrix() → table: event, secrets, fork reach, automation-fires
+
+list_recent_runs(repo) → run_gh(["api", "repos/{repo}/actions/runs"])   PRA_MODE=fixture | live
+    → print_recent_runs() → table: workflow, event, head_sha, conclusion
+    (every workflow_run-triggered run shows the SAME head_sha as its pull_request upstream: hop 1)
 
 simulate_workflow_run_chain(hops=3)
     hop 1 → real SHA

@@ -10,12 +10,20 @@ structured data, and simulates the `workflow_run` chaining trap this repo's own
 
 Usage
 -----
-Run directly for a demo walkthrough::
+Run directly for a demo walkthrough (fixture mode -- fully offline)::
 
     python labs/lab_09_event_matrix.py
 
+Or list the real recent runs of the sandbox repo, to see each run's triggering
+``event`` and ``head_sha`` side by side::
+
+    PRA_MODE=live PRA_REPO=<you>/practice_git_intro_to_pr_automerge \\
+        python labs/lab_09_event_matrix.py
+
 Environment Variables (PRA_ prefix)
 ------------------------------------
+PRA_MODE       : "fixture" (default) or "live"
+PRA_REPO       : "owner/name" -- required in live mode
 PRA_OUTPUT_DIR : Path where output reports are written (default: output/)
 
 References
@@ -32,6 +40,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from pr_automerge.gh_client import run_gh  # noqa: E402
 from pr_automerge.render import section  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -155,17 +164,76 @@ def simulate_workflow_run_chain(hops: int) -> list[str]:
     return results
 
 
+def list_recent_runs(repo: str, *, per_page: int = 20) -> list[dict]:
+    """List the repo's most recent workflow runs with their triggering event and SHA.
+
+    Uses ``GET /repos/{owner}/{repo}/actions/runs`` (``gh api``). In fixture mode this
+    reads ``fixtures/workflow_runs_sample.json`` -- the PR #101 spine: CI and Gate 3
+    triggered by ``pull_request``, and Gate 2 triggered by ``workflow_run`` off CI,
+    all reporting the same ``head_sha`` because Gate 2 is a FIRST hop (Chapter 09 §8).
+    In live mode you see the sandbox repo's real runs, where the same pattern holds.
+
+    Parameters
+    ----------
+    repo : str
+        "owner/name".
+    per_page : int
+        How many runs to fetch (the endpoint's page size; max 100).
+
+    Returns
+    -------
+    list[dict]
+        One trimmed dict per run: ``name``, ``event``, ``head_sha``, ``conclusion``.
+    """
+    data = run_gh(
+        ["api", f"repos/{repo}/actions/runs?per_page={per_page}"],
+        fixture="workflow_runs_sample",
+    )
+    return [
+        {
+            "name": run.get("name", "?"),
+            "event": run.get("event", "?"),
+            "head_sha": run.get("head_sha", "?"),
+            "conclusion": run.get("conclusion"),
+        }
+        for run in data.get("workflow_runs", [])
+    ]
+
+
+def print_recent_runs(runs: list[dict]) -> None:
+    """Print a fixed-width table of runs: name, triggering event, short SHA, conclusion."""
+    header = f"{'WORKFLOW':<24}{'EVENT':<18}{'HEAD_SHA':<14}{'CONCLUSION'}"
+    print(header)
+    print("-" * len(header))
+    for run in runs:
+        print(
+            f"{run['name'][:23]:<24}"
+            f"{run['event']:<18}"
+            f"{run['head_sha'][:12]:<14}"
+            f"{run['conclusion']}"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 
 def main() -> None:
-    """Print the event matrix, then simulate the workflow_run chaining trap."""
+    """Print the event matrix, list recent runs, then simulate the chaining trap."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    mode = os.environ.get("PRA_MODE", "fixture")
+    repo = os.environ.get("PRA_REPO", "octocat/practice_git_intro_to_pr_automerge")
 
     section("Event comparison matrix")
     print_event_matrix()
+
+    section(f"Recent workflow runs ({mode} mode): which event fired each, and its head_sha")
+    print_recent_runs(list_recent_runs(repo))
+    print(
+        "\nEvery workflow_run-triggered run above should carry the SAME head_sha as the\n"
+        "pull_request run it listened to -- that is hop 1, where head_sha is still faithful."
+    )
 
     section("The workflow_run chaining trap, simulated")
     for hop, sha in enumerate(simulate_workflow_run_chain(3), start=1):
